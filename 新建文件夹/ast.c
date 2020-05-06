@@ -118,7 +118,7 @@ void display(struct ASTNode *T,int indent)
                         break;
 	case FLOAT:	        printf("%*cFLAOT：%f\n",indent,' ',T->type_float);
                         break;
-    case CHAR:          printf("%*cCHAR：%c\n",indent,' ',T->type_char);
+    case CHAR:          printf("%*cFLAOT：%c\n",indent,' ',T->type_char);
                         break;
 	case ASSIGNOP:
 	case AND:

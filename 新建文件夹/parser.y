@@ -125,7 +125,7 @@ Exp:    Exp ASSIGNOP Exp {$$=mknode(2,ASSIGNOP,yylineno,$1,$3);strcpy($$->type_i
       | ID            {$$=mknode(0,ID,yylineno);strcpy($$->type_id,$1);}
       | INT           {$$=mknode(0,INT,yylineno);$$->type_int=$1;$$->type=INT;}
       | FLOAT         {$$=mknode(0,FLOAT,yylineno);$$->type_float=$1;$$->type=FLOAT;}
-      | CHAR          {$$=mknode(0,CHAR,yylineno);$$->type_char=$1;$$->type=CHAR;}
+      | CHAR          {$$=mknode(0,CHAR,yylineno);$$->type_float=$1;$$->type=CHAR;}
       ;
 Args:    Exp COMMA Args    {$$=mknode(2,ARGS,yylineno,$1,$3);}
        | Exp               {$$=mknode(1,ARGS,yylineno,$1);}

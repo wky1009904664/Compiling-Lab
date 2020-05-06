@@ -8,11 +8,10 @@ int fibo(int a) {
 int main()
 {
     int m,n,i;
-    char c = 'a';
     m = read();
     i = 1;
     i=(m+n)/i;
-    
+    char c = 'a';
     while(i<=m)
     {
         n = fibo(i);

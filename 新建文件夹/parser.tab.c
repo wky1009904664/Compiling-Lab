@@ -1932,7 +1932,7 @@ yyreduce:
 
 /* Line 1455 of yacc.c  */
 #line 128 "parser.y"
-    {(yyval.ptr)=mknode(0,CHAR,yylineno);(yyval.ptr)->type_char=(yyvsp[(1) - (1)].type_char);(yyval.ptr)->type=CHAR;;}
+    {(yyval.ptr)=mknode(0,CHAR,yylineno);(yyval.ptr)->type_float=(yyvsp[(1) - (1)].type_char);(yyval.ptr)->type=CHAR;;}
     break;
 
   case 53:

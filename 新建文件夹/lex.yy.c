@@ -822,7 +822,7 @@ YY_RULE_SETUP
 case 26:
 YY_RULE_SETUP
 #line 53 "lex.l"
-{yycolumn=1;}   
+{yycolumn=1;return yytext[0];}   
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
