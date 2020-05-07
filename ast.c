@@ -98,6 +98,7 @@ void display(struct ASTNode *T,int indent)
     case VAR_DEF:       printf("%*c局部变量定义：(%d)\n",indent,' ',T->pos);
                         display(T->ptr[0],indent+3);   //显示变量类型
                         display(T->ptr[1],indent+3);   //显示该定义的全部变量名
+                        
                         break;
     case DEC_LIST:      printf("%*c变量名：\n",indent,' ');
                         T0=T;
@@ -109,6 +110,9 @@ void display(struct ASTNode *T,int indent)
                                 printf("%*c %s ASSIGNOP\n ",indent+6,' ',T0->ptr[0]->ptr[0]->type_id);
                                 display(T0->ptr[0]->ptr[1],indent+strlen(T0->ptr[0]->ptr[0]->type_id)+7);        //显示初始化表达式
                                 }
+                            else if(T0->ptr[0]->kind==ArrayDef){
+                                display(T0->ptr[0],indent+strlen(T0->ptr[0]->ptr[0]->type_id)+7);
+                            }
                             T0=T0->ptr[1];
                             }
                         break;
@@ -119,6 +123,30 @@ void display(struct ASTNode *T,int indent)
 	case FLOAT:	        printf("%*cFLAOT：%f\n",indent,' ',T->type_float);
                         break;
     case CHAR:          printf("%*cCHAR：%c\n",indent,' ',T->type_char);
+                        break;
+    case SelfPlusL:     printf("%*c前置自增：++%s\n",indent,' ',T->type_id);
+                        break;
+    case SelfPlusR:     printf("%*c后置自增：%s++\n",indent,' ',T->type_id);
+                        break;
+    case SelfDecL:     printf("%*c前置自减：--%s\n",indent,' ',T->type_id);
+                        break;
+    case SelfDecR:     printf("%*c后置自减%s--\n",indent,' ',T->type_id);
+                        break;
+    case ArrayDef:    
+                        printf("%*c%s,Array length : %d\n",indent,' ',T->type_id,T->arrlen);
+                       display(T->ptr[0],indent+3);
+                        break;
+    case ArrayUse:     printf("%*cARRAY : %s\n",indent,' ',T->type_id);
+                       display(T->ptr[0],indent+3);
+                       display(T->ptr[1],indent+3);
+                        break;
+    case StructDec:    printf("%*cStruct声明： %s\n",indent,' ',T->type_id);
+                       display(T->ptr[0],indent+3);
+                       break;
+    case StructDef:    printf("%*cStruct定义： %s\n",indent,' ',T->type_id);
+                        break;
+    case StructVal:    printf("%*cStruct值： %s\n",indent,' ',T->type_id);
+                       display(T->ptr[0],indent+3);
                         break;
 	case ASSIGNOP:
 	case AND:

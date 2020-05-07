@@ -22,15 +22,23 @@ void display(struct ASTNode *,int);
 
 //  %type 定义非终结符的语义值类型
 %type  <ptr> program ExtDefList ExtDef  Specifier ExtDecList FuncDec CompSt VarList VarDec ParamDec Stmt StmList DefList Def DecList Dec Exp Args //CaseStmtList0 CaseStmtList
+%type <ptr> StructSpecifier StructName SDefList SDef SDecList SDec
+
 
 //% token 定义终结符的语义值类型
 %token <type_int> INT              /*指定INT的语义值是type_int，有词法分析得到的数值*/
 %token <type_id> ID  RELOP  TYPE   /*指定ID,RELOP 的语义值是type_id，有词法分析得到的标识符字符串*/
 %token <type_float> FLOAT          /*指定ID的语义值是type_id，有词法分析得到的标识符字符串*/
 %token <type_char> CHAR
+%token <type_id> SelfPlusL SelfPlusR SelfDecL SelfDecR
 
+%token BREAK CONTINUE STRUCT
 %token DPLUS LP RP LC RC SEMI COMMA      /*用bison对该文件编译时，带参数-d，生成的.tab.h中给这些单词进行编码，可在lex.l中包含parser.tab.h使用这些单词种类码*/
 %token PLUS MINUS STAR DIV ASSIGNOP AND OR NOT IF ELSE WHILE RETURN FOR SWITCH CASE COLON DEFAULT
+%token LB RB DOT
+%token ArrayDef ArrayUse
+%token StructDec StructDef StructVal
+
 /*以下为接在上述token后依次编码的枚举常量，作为AST结点类型标记*/
 %token EXT_DEF_LIST EXT_VAR_DEF FUNC_DEF FUNC_DEC EXT_DEC_LIST PARAM_LIST PARAM_DEC VAR_DEF DEC_LIST DEF_LIST COMP_STM STM_LIST EXP_STMT IF_THEN IF_THEN_ELSE
 %token FUNC_CALL ARGS FUNCTION PARAM ARG CALL LABEL GOTO JLT JLE JGT JGE EQ NEQ
@@ -56,9 +64,14 @@ ExtDefList: {$$=NULL;}
           ;  
 ExtDef:   Specifier ExtDecList SEMI   {$$=mknode(2,EXT_VAR_DEF,yylineno,$1,$2);}   //该结点对应一个外部变量声明
          |Specifier FuncDec CompSt    {$$=mknode(3,FUNC_DEF,yylineno,$1,$2,$3);}         //该结点对应一个函数定义
+         |StructSpecifier SEMI
          | error SEMI   {$$=NULL;}
          ;
-Specifier:  TYPE {
+StructSpecifier: STRUCT StructName LC SDefList RC {$$=mknode(1,StructDec,yylineno,$4);strcpy($$->type_id,$2->type_id);}
+                | STRUCT ID { $$=mknode(0,StructDef,yylineno);strcpy($$->type_id,$2);}
+StructName:ID { $$=mknode(0,ID,yylineno);strcpy($$->type_id,$1);} 
+          |{$$=NULL;}
+Specifier:TYPE {
                     $$=mknode(0,TYPE,yylineno);strcpy($$->type_id,$1);
                         if(strcmp($1,"int") == 0)
                           $$->type=INT;
@@ -67,16 +80,18 @@ Specifier:  TYPE {
                         else if(strcmp($1,"char")==0)
                           $$->type = CHAR;
                  }   
+        | StructSpecifier{$$ = $1;}
            ;      
 ExtDecList:  VarDec      {$$=$1;}       /*每一个EXT_DECLIST的结点，其第一棵子树对应一个变量名(ID类型的结点),第二棵子树对应剩下的外部变量名*/
            | VarDec COMMA ExtDecList {$$=mknode(2,EXT_DEC_LIST,yylineno,$1,$3);}
            ;  
 VarDec:  ID          {$$=mknode(0,ID,yylineno);strcpy($$->type_id,$1);}   //ID结点，标识符符号串存放结点的type_id
+        | VarDec LB INT RB {$$=mknode(1,ArrayDef,yylineno,$1);$$->arrlen=$3;strcpy($$->type_id,"ArrayDef");} 
          ;
 FuncDec: ID LP VarList RP   {$$=mknode(1,FUNC_DEC,yylineno,$3);strcpy($$->type_id,$1);}//函数名存放在$$->type_id
 		|ID LP  RP   {$$=mknode(0,FUNC_DEC,yylineno);strcpy($$->type_id,$1);$$->ptr[0]=NULL;}//函数名存放在$$->type_id
-
         ;  
+
 VarList: ParamDec  {$$=mknode(1,PARAM_LIST,yylineno,$1);}
         | ParamDec COMMA  VarList  {$$=mknode(2,PARAM_LIST,yylineno,$1,$3);}
         ;
@@ -107,6 +122,20 @@ DecList: Dec  {$$=mknode(1,DEC_LIST,yylineno,$1);}
 Dec:     VarDec  {$$=$1;}
        | VarDec ASSIGNOP Exp  {$$=mknode(2,ASSIGNOP,yylineno,$1,$3);strcpy($$->type_id,"ASSIGNOP");}
        ;
+
+SDefList: {$$=NULL; }
+        | SDef SDefList {$$=mknode(2,DEF_LIST,yylineno,$1,$2);}
+        | error SEMI   {$$=NULL;}
+        ;
+SDef:    Specifier SDecList SEMI {$$=mknode(2,VAR_DEF,yylineno,$1,$2);}
+        ;
+SDecList: SDec  {$$=mknode(1,DEC_LIST,yylineno,$1);}
+       | SDec COMMA SDecList  {$$=mknode(2,DEC_LIST,yylineno,$1,$3);}
+	   ;
+SDec:     VarDec  {$$=$1;}
+       ;
+
+
 Exp:    Exp ASSIGNOP Exp {$$=mknode(2,ASSIGNOP,yylineno,$1,$3);strcpy($$->type_id,"ASSIGNOP");}//$$结点type_id空置未用，正好存放运算符
       | Exp AND Exp   {$$=mknode(2,AND,yylineno,$1,$3);strcpy($$->type_id,"AND");}
       | Exp OR Exp    {$$=mknode(2,OR,yylineno,$1,$3);strcpy($$->type_id,"OR");}
@@ -119,13 +148,19 @@ Exp:    Exp ASSIGNOP Exp {$$=mknode(2,ASSIGNOP,yylineno,$1,$3);strcpy($$->type_i
       | MINUS Exp %prec UMINUS   {$$=mknode(1,UMINUS,yylineno,$2);strcpy($$->type_id,"UMINUS");}
       | NOT Exp       {$$=mknode(1,NOT,yylineno,$2);strcpy($$->type_id,"NOT");}
       | DPLUS  Exp      {$$=mknode(1,DPLUS,yylineno,$2);strcpy($$->type_id,"DPLUS");}
-      |   Exp DPLUS      {$$=mknode(1,DPLUS,yylineno,$1);strcpy($$->type_id,"DPLUS");}
+      | Exp DPLUS      {$$=mknode(1,DPLUS,yylineno,$1);strcpy($$->type_id,"DPLUS");}
       | ID LP Args RP {$$=mknode(1,FUNC_CALL,yylineno,$3);strcpy($$->type_id,$1);}
       | ID LP RP      {$$=mknode(0,FUNC_CALL,yylineno);strcpy($$->type_id,$1);}
       | ID            {$$=mknode(0,ID,yylineno);strcpy($$->type_id,$1);}
       | INT           {$$=mknode(0,INT,yylineno);$$->type_int=$1;$$->type=INT;}
       | FLOAT         {$$=mknode(0,FLOAT,yylineno);$$->type_float=$1;$$->type=FLOAT;}
       | CHAR          {$$=mknode(0,CHAR,yylineno);$$->type_char=$1;$$->type=CHAR;}
+      | SelfPlusL     {$$=mknode(0,SelfPlusL,yylineno);strcpy($$->type_id,$1);}
+      | SelfPlusR     {$$=mknode(0,SelfPlusR,yylineno);strcpy($$->type_id,$1);}
+      | SelfDecL      {$$=mknode(0,SelfDecL,yylineno);strcpy($$->type_id,$1);}
+      | SelfDecR      {$$=mknode(0,SelfDecR,yylineno);strcpy($$->type_id,$1);}
+      | ID LB Exp RB {$$=mknode(2,ArrayUse,yylineno,$1,$3);strcpy($$->type_id,$1);}   
+      | Exp DOT ID %prec UMINUS {$$=mknode(1,StructVal,yylineno,$1);strcpy($$->type_id,ID);}   
       ;
 Args:    Exp COMMA Args    {$$=mknode(2,ARGS,yylineno,$1,$3);}
        | Exp               {$$=mknode(1,ARGS,yylineno,$1);}
