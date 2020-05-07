@@ -51,6 +51,7 @@ void display(struct ASTNode *,int);
 %left PLUS MINUS
 %left STAR DIV
 %right UMINUS NOT DPLUS
+%left DOT
 
 %nonassoc LOWER_THEN_ELSE
 %nonassoc ELSE
@@ -135,7 +136,6 @@ SDecList: SDec  {$$=mknode(1,DEC_LIST,yylineno,$1);}
 SDec:     VarDec  {$$=$1;}
        ;
 
-
 Exp:    Exp ASSIGNOP Exp {$$=mknode(2,ASSIGNOP,yylineno,$1,$3);strcpy($$->type_id,"ASSIGNOP");}//$$结点type_id空置未用，正好存放运算符
       | Exp AND Exp   {$$=mknode(2,AND,yylineno,$1,$3);strcpy($$->type_id,"AND");}
       | Exp OR Exp    {$$=mknode(2,OR,yylineno,$1,$3);strcpy($$->type_id,"OR");}
@@ -160,7 +160,7 @@ Exp:    Exp ASSIGNOP Exp {$$=mknode(2,ASSIGNOP,yylineno,$1,$3);strcpy($$->type_i
       | SelfDecL      {$$=mknode(0,SelfDecL,yylineno);strcpy($$->type_id,$1);}
       | SelfDecR      {$$=mknode(0,SelfDecR,yylineno);strcpy($$->type_id,$1);}
       | ID LB Exp RB {$$=mknode(2,ArrayUse,yylineno,$1,$3);strcpy($$->type_id,$1);}   
-      | Exp DOT ID %prec UMINUS {$$=mknode(1,StructVal,yylineno,$1);strcpy($$->type_id,ID);}   
+      | Exp DOT ID {$$=mknode(1,StructVal,yylineno,$1);strcpy($$->type_id,$3);}   
       ;
 Args:    Exp COMMA Args    {$$=mknode(2,ARGS,yylineno,$1,$3);}
        | Exp               {$$=mknode(1,ARGS,yylineno,$1);}

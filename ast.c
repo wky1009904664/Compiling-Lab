@@ -140,12 +140,13 @@ void display(struct ASTNode *T,int indent)
                        display(T->ptr[0],indent+3);
                        display(T->ptr[1],indent+3);
                         break;
-    case StructDec:    printf("%*cStruct声明： %s\n",indent,' ',T->type_id);
+    case StructDec:    printf("%*cStruct 声明： %s (%d)\n",indent,' ',T->type_id,T->pos);
                        display(T->ptr[0],indent+3);
+                       printf("%*cStruct声明完 \n",indent,' ');
                        break;
-    case StructDef:    printf("%*cStruct定义： %s\n",indent,' ',T->type_id);
+    case StructDef:    printf("%*cStruct %s定义： \n",indent,' ',T->type_id);
                         break;
-    case StructVal:    printf("%*cStruct值： %s\n",indent,' ',T->type_id);
+    case StructVal:    printf("%*cStruct属性： %s\n",indent,' ',T->type_id);
                        display(T->ptr[0],indent+3);
                         break;
 	case ASSIGNOP:

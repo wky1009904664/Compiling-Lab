@@ -1,4 +1,5 @@
-int a,b,c;/*abc*/
+int a,b,c;/*a
+bc*/
 float m,n;//signle note test
 int arr[3];
 int fibo(int a) {
@@ -20,6 +21,7 @@ int main()
 {
     int m,n,i,ssf[3];
     int arrr[3][2];
+    struct A a;
     char c = 'a';
     arr[a[2]] = 1;
     m = read();
@@ -27,10 +29,8 @@ int main()
     i=(m+n)/i;
     ++i;
     i--;
-    //++i;
-    //i--;
-    struct A a;
-    A.a = 1;
+    
+    a.b.c = 1;
     while(i<=m)
     {
         n = fibo(i);
