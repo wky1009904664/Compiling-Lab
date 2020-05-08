@@ -131,19 +131,21 @@ void display(struct ASTNode *T,int indent)
                             }
                         break;
     case SWITCH:        printf("%*cSWITCH语句：\n",indent,' ');
+                        printf("%*c条件表达式：\n",indent,' ');
                         display(T->ptr[0],indent+3); 
+                        display(T->ptr[1],indent); 
                         break;
     case CaseList:      printf("%*cCaseList：\n",indent,' ');
                         while (T) {  //ARGS表示实际参数表达式序列结点，其第一棵子树为其一个实际参数表达式，第二棵子树为剩下的
                         if(strcmp(T->type_id,"DEFAULT")==0)
                             display(T,indent);
                         else{
-                            printf("%*cCase：\n",indent,' ',i++);
+                            printf("%*cCase：\n",indent+3,' ',i++);
                             struct ASTNode *T0=T->ptr[0];
                             struct ASTNode *T1=T->ptr[1];
-                            display(T0,indent+3);
+                            display(T0,indent+6);
                             printf("%*cCaseStmtList: \n",indent+3,' ');           
-                            display(T1,indent+3);
+                            display(T1,indent+6);
                         }
                         T=T->ptr[2];
                         }
@@ -162,6 +164,8 @@ void display(struct ASTNode *T,int indent)
 	case FLOAT:	        printf("%*cFLAOT：%f\n",indent,' ',T->type_float);
                         break;
     case CHAR:          printf("%*cCHAR：%c\n",indent,' ',T->type_char);
+                        break;
+    case STRING:        printf("%*cSTRING：%s\n",indent,' ',T->type_id);
                         break;
     case SelfPlusL:     printf("%*c前置自增：++%s\n",indent,' ',T->type_id);
                         break;
@@ -185,8 +189,9 @@ void display(struct ASTNode *T,int indent)
                        break;
     case StructDef:    printf("%*cStruct %s定义： \n",indent,' ',T->type_id);
                         break;
-    case StructVal:    printf("%*cStruct属性： %s\n",indent,' ',T->type_id);
-                       display(T->ptr[0],indent+3);
+    case StructVal:    display(T->ptr[0],indent);
+                       printf("%*cStruct属性： %s\n",indent+3,' ',T->type_id);
+                       
                         break;
     case BREAK:        printf("%*cBREAK： %s\n",indent,' ',T->type_id);
                         break;
@@ -204,6 +209,8 @@ void display(struct ASTNode *T,int indent)
 	case RELOP:
 	case PLUS:
 	case MINUS:
+    case PLUSASS:
+    case DECASS:
 	case STAR:
 	case DIV:
                     printf("%*c%s\n",indent,' ',T->type_id);

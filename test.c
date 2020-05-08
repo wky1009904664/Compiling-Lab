@@ -1,6 +1,6 @@
 int a,b,c;/*,
-     CaseStmtList = 336,
-     CaseList = 337*/
+     CaseStmtList = 339,
+     CaseList = 440*/
 float m,n;//printf("Type_id:%s\n",T0->type_id);
 int arr[3];
 int fibo(int a) {
@@ -25,7 +25,10 @@ int main()
     int arrr[3][2];
     struct A a;
     int *a = &b;
+    break;
     char c = 'a';
+    float f = 1.4;
+    string str = "this is a string";
     arr[a[2]] = 1;
     m = read();
     i = -1;
@@ -33,7 +36,7 @@ int main()
     i=(m+n)/i;
     ++i;
     i--;
-    a.b.c = 1;
+    a.b = 1;
     //break;
     while(i<=m)
     {
@@ -53,7 +56,7 @@ int main()
             break;
     }
 
-    switch ( menu() )            
+    switch (menu())            
     {
      case 'a':
      case 'A': action1();            

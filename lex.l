@@ -16,23 +16,30 @@ typedef union {
 
 %}
 %option yylineno
-
+%x NOTEBEGIN
 id   [A-Za-z][A-Za-z0-9]*  
 int    [0-9]+
 float  ([0-9]*\.[0-9]+)|([0-9]+\.)
 char '[^\t\n\t]'
-note  ("//".*\n?)|("/"\*(.|\n)*\*"/")
+note  ("//".*\n?)
 selfpulsL "++"{id}
 selfpulsR {id}"++"
 selfdecL "--"{id}
 selfdecR {id}"--"
+str \"[^\t\n\t]*\"
+
 %%
 {note}		 {printf("NOTE : %s in line : %d\n",yytext,yylineno);}
 {int}        {printf("INT : %s in line : %d\n",yytext,yylineno); yylval.type_int=atoi(yytext); return INT;}
 {float}      {printf("FLOAT : %s in line : %d\n",yytext,yylineno);yylval.type_float=atof(yytext); return FLOAT;}
 "int"        {printf("Type : %s in line : %d\n",yytext,yylineno);strcpy(yylval.type_id,  yytext); return TYPE;}
 "float"      {printf("Type : %s in line : %d\n",yytext,yylineno);strcpy(yylval.type_id,  yytext);return TYPE;}
-"char"      {printf("Type : %s in line : %d\n",yytext,yylineno);strcpy(yylval.type_id,  yytext);return TYPE;}
+"char"       {printf("Type : %s in line : %d\n",yytext,yylineno);strcpy(yylval.type_id,  yytext);return TYPE;}
+"string"	 {printf("Type : %s in line : %d\n",yytext,yylineno);strcpy(yylval.type_id,  yytext);return TYPE;}
+
+"/*"		 {BEGIN(NOTEBEGIN);printf("NOTE:");}
+<NOTEBEGIN>([^*]|\n)+|. {printf("%s",yytext);}
+<NOTEBEGIN>"*/" {printf("NOTE:");BEGIN(INITIAL);}
 
 "return"     {printf("RETURN : %s in line : %d\n",yytext,yylineno);return RETURN;}
 "if"         {printf("IF : %s in line : %d\n",yytext,yylineno);return IF;}
@@ -46,6 +53,8 @@ selfdecR {id}"--"
 "case"	 	 {printf("CASE : %s in line : %d\n",yytext,yylineno);return CASE;}
 "default"	 {printf("DEFAULT : %s in line : %d\n",yytext,yylineno);return DEFAULT;}
 
+{str}		 {printf("String : %s in line : %d\n",yytext,yylineno);strcpy(yylval.type_id,  yytext);return STRING;}
+
 {id}        {printf("Identifier : %s in line : %d\n",yytext,yylineno);strcpy(yylval.type_id,  yytext); return ID;/*由于关键字的形式也符合标识符的规则，所以把关键字的处理全部放在标识符的前面，优先识别*/}
 ";"			{printf("SEMI : %s in line : %d\n",yytext,yylineno);return SEMI;}
 ","			{printf("COMMA : %s in line : %d\n",yytext,yylineno);return COMMA;}
@@ -55,6 +64,8 @@ selfdecR {id}"--"
 "="			{printf("ASSIGNOP : %s in line : %d\n",yytext,yylineno);return ASSIGNOP;}
 "+"			{printf("PLUS : %s in line : %d\n",yytext,yylineno);return PLUS;}
 "-"			{printf("MINUS : %s in line : %d\n",yytext,yylineno);return MINUS;}
+"+="		{printf("PLUSASS : %s in line : %d\n",yytext,yylineno);return PLUSASS;}
+"-="		{printf("DECASS : %s in line : %d\n",yytext,yylineno);return DECASS;}
 "*"			{printf("STAR : %s in line : %d\n",yytext,yylineno);return STAR;}
 "&"			{printf("ADDR : %s in line : %d\n",yytext,yylineno);return ADDR;}
 "/"			{printf("DIV : %s in line : %d\n",yytext,yylineno);return DIV;}

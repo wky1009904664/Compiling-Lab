@@ -28,7 +28,7 @@ void display(struct ASTNode *,int);
  
 //% token 定义终结符的语义值类型
 %token <type_int> INT              /*指定INT的语义值是type_int，有词法分析得到的数值*/
-%token <type_id> ID  RELOP  TYPE   /*指定ID,RELOP 的语义值是type_id，有词法分析得到的标识符字符串*/
+%token <type_id> ID  RELOP  TYPE STRING  /*指定ID,RELOP 的语义值是type_id，有词法分析得到的标识符字符串*/
 %token <type_float> FLOAT          /*指定ID的语义值是type_id，有词法分析得到的标识符字符串*/
 %token <type_char> CHAR
 %token <type_id> SelfPlusL SelfPlusR SelfDecL SelfDecR
@@ -36,7 +36,7 @@ void display(struct ASTNode *,int);
 %token BREAK CONTINUE STRUCT
 %token DPLUS LP RP LC RC SEMI COMMA      /*用bison对该文件编译时，带参数-d，生成的.tab.h中给这些单词进行编码，可在lex.l中包含parser.tab.h使用这些单词种类码*/
 %token PLUS MINUS STAR DIV ASSIGNOP AND OR NOT IF ELSE WHILE FOR RETURN SWITCH CASE COLON DEFAULT
-%token LB RB DOT ADDR
+%token LB RB DOT ADDR DECASS PLUSASS
 %token ArrayDef ArrayUse
 %token StructDec StructDef StructVal
 
@@ -45,13 +45,14 @@ void display(struct ASTNode *,int);
 %token FUNC_CALL ARGS FUNCTION PARAM ARG CALL LABEL GOTO JLT JLE JGT JGE EQ NEQ Pointer
 
 
-%left ASSIGNOP
+%left ASSIGNOP PLUSASS DECASS
 %left OR
 %left AND
 %left RELOP
 %left PLUS MINUS
 %left STAR DIV
 %right UMINUS NOT DPLUS
+%left LB RB
 %left DOT
 
 %nonassoc LOWER_THEN_ELSE
@@ -81,6 +82,8 @@ Specifier:TYPE {
                           $$->type = FLOAT;
                         else if(strcmp($1,"char")==0)
                           $$->type = CHAR;
+                        else if(strcmp($1,"string")==0)
+                          $$->type = STRING;      
                  }   
         | StructSpecifier{$$ = $1;}
            ;      
@@ -113,7 +116,7 @@ Stmt:   Exp SEMI    {$$=mknode(1,EXP_STMT,yylineno,$1);}
       | IF LP Exp RP Stmt ELSE Stmt   {$$=mknode(3,IF_THEN_ELSE,yylineno,$3,$5,$7);}
       | WHILE LP Exp RP LoopStmt {$$=mknode(2,WHILE,yylineno,$3,$5);}
       | FOR LP EmpArgs SEMI EmpArgs SEMI EmpArgs RP LoopStmt {$$=mknode(4,FOR,yylineno,$3,$5,$7,$9);}
-      | SWITCH LP Exp RP LC CaseList RC {$$=mknode(1,SWITCH,yylineno,$6);}
+      | SWITCH LP Exp RP LC CaseList RC {$$=mknode(2,SWITCH,yylineno,$3,$6);}
       ;
 
 CaseStmtList: {$$=NULL; }  
@@ -126,7 +129,7 @@ CaseStmt:Exp SEMI    {$$=mknode(1,EXP_STMT,yylineno,$1);}
          | IF LP Exp RP LoopStmt ELSE LoopStmt   {$$=mknode(3,IF_THEN_ELSE,yylineno,$3,$5,$7);}
          | WHILE LP Exp RP LoopStmt {$$=mknode(2,WHILE,yylineno,$3,$5);}
          | FOR LP EmpArgs SEMI EmpArgs SEMI EmpArgs RP LoopStmt {$$=mknode(4,FOR,yylineno,$3,$5,$7,$9);}
-         | SWITCH LP Exp RP LC CaseList RC {$$=mknode(1,SWITCH,yylineno,$6);}
+         | SWITCH LP Exp RP LC CaseList RC {$$=mknode(2,SWITCH,yylineno,$3,$6);}
          | BREAK SEMI{$$=mknode(0,BREAK,yylineno);strcpy($$->type_id,"BREAK");}
          ;
 
@@ -146,7 +149,7 @@ LoopStmt: Exp SEMI    {$$=mknode(1,EXP_STMT,yylineno,$1);}
          | IF LP Exp RP LoopStmt ELSE LoopStmt   {$$=mknode(3,IF_THEN_ELSE,yylineno,$3,$5,$7);}
          | WHILE LP Exp RP LoopStmt {$$=mknode(2,WHILE,yylineno,$3,$5);}
          | FOR LP EmpArgs SEMI EmpArgs SEMI EmpArgs RP LoopStmt {$$=mknode(4,FOR,yylineno,$3,$5,$7,$9);}
-         | SWITCH LP Exp RP LC CaseList RC {$$=mknode(1,SWITCH,yylineno,$6);}
+         | SWITCH LP Exp RP LC CaseList RC {$$=mknode(2,SWITCH,yylineno,$3,$6);}
          | CONTINUE SEMI {$$=mknode(0,CONTINUE,yylineno);strcpy($$->type_id,"CONTINUE");}
          | BREAK SEMI{$$=mknode(0,BREAK,yylineno);strcpy($$->type_id,"BREAK");}
          ;
@@ -185,11 +188,13 @@ Exp:    Exp ASSIGNOP Exp {$$=mknode(2,ASSIGNOP,yylineno,$1,$3);strcpy($$->type_i
       | Exp RELOP Exp {$$=mknode(2,RELOP,yylineno,$1,$3);strcpy($$->type_id,$2);}  //词法分析关系运算符号自身值保存在$2中
       | Exp PLUS Exp  {$$=mknode(2,PLUS,yylineno,$1,$3);strcpy($$->type_id,"PLUS");}
       | Exp MINUS Exp {$$=mknode(2,MINUS,yylineno,$1,$3);strcpy($$->type_id,"MINUS");}
+      | Exp PLUSASS Exp  {$$=mknode(2,PLUSASS,yylineno,$1,$3);strcpy($$->type_id,"PLUSASS");}
+      | Exp DECASS Exp  {$$=mknode(2,DECASS,yylineno,$1,$3);strcpy($$->type_id,"DECASS");}
       | Exp STAR Exp  {$$=mknode(2,STAR,yylineno,$1,$3);strcpy($$->type_id,"STAR");}
       | Exp DIV Exp   {$$=mknode(2,DIV,yylineno,$1,$3);strcpy($$->type_id,"DIV");}
       | LP Exp RP     {$$=$2;}
       | MINUS Exp %prec UMINUS   {$$=mknode(1,UMINUS,yylineno,$2);strcpy($$->type_id,"UMINUS");}
-      | STAR Exp %prec UMINUS    {$$=mknode(1,UMINUS,yylineno,$2);strcpy($$->type_id,"STAR");}
+      | STAR Exp %prec UMINUS    {$$=mknode(1,UMINUS,yylineno,$2);strcpy($$->type_id,"Pointer");}
       | ADDR Exp %prec UMINUS    {$$=mknode(1,UMINUS,yylineno,$2);strcpy($$->type_id,"ADDR");}
       | NOT Exp       {$$=mknode(1,NOT,yylineno,$2);strcpy($$->type_id,"NOT");}
       | DPLUS  Exp      {$$=mknode(1,DPLUS,yylineno,$2);strcpy($$->type_id,"DPLUS");}
@@ -200,11 +205,12 @@ Exp:    Exp ASSIGNOP Exp {$$=mknode(2,ASSIGNOP,yylineno,$1,$3);strcpy($$->type_i
       | INT           {$$=mknode(0,INT,yylineno);$$->type_int=$1;$$->type=INT;}
       | FLOAT         {$$=mknode(0,FLOAT,yylineno);$$->type_float=$1;$$->type=FLOAT;}
       | CHAR          {$$=mknode(0,CHAR,yylineno);$$->type_char=$1;$$->type=CHAR;}
+      | STRING        {$$=mknode(0,STRING,yylineno);strcpy($$->type_id,$1);$$->type=STRING;}
       | SelfPlusL     {$$=mknode(0,SelfPlusL,yylineno);strcpy($$->type_id,$1);}
       | SelfPlusR     {$$=mknode(0,SelfPlusR,yylineno);strcpy($$->type_id,$1);}
       | SelfDecL      {$$=mknode(0,SelfDecL,yylineno);strcpy($$->type_id,$1);}
       | SelfDecR      {$$=mknode(0,SelfDecR,yylineno);strcpy($$->type_id,$1);}
-      | ID LB Exp RB {$$=mknode(2,ArrayUse,yylineno,$1,$3);strcpy($$->type_id,$1);}   
+      | Exp LB Exp RB {$$=mknode(2,ArrayUse,yylineno,$1,$3);}   
       | Exp DOT ID {$$=mknode(1,StructVal,yylineno,$1);strcpy($$->type_id,$3);}   
       ;
 ConstExp:  INT           {$$=mknode(0,INT,yylineno);$$->type_int=$1;$$->type=INT;}
