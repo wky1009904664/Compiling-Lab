@@ -72,11 +72,21 @@ void display(struct ASTNode *T,int indent)
 	case STM_LIST:      display(T->ptr[0],indent);      //显示第一条语句
                         display(T->ptr[1],indent);        //显示剩下语句
                         break;
-	case WHILE:         printf("%*c循环语句：(%d)\n",indent,' ',T->pos);
+	case WHILE:         printf("%*cWhile循环语句：(%d)\n",indent,' ',T->pos);
                         printf("%*c循环条件：\n",indent+3,' ');
                         display(T->ptr[0],indent+6);      //显示循环条件
                         printf("%*c循环体：(%d)\n",indent+3,' ',T->pos);
                         display(T->ptr[1],indent+6);      //显示循环体
+                        break;
+    case FOR:           printf("%*cFor循环语句：(%d)\n",indent,' ',T->pos);
+                        printf("%*c循环条件初始化：\n",indent+3,' ');
+                        display(T->ptr[0],indent+6);      //显示循环条件
+                        printf("%*c循环条件：\n",indent+3,' ');
+                        display(T->ptr[1],indent+6);      //显示循环条件
+                        printf("%*c每次循环操作：\n",indent+3,' ');
+                        display(T->ptr[2],indent+6);      //显示循环条件
+                        printf("%*c循环体：(%d)\n",indent+3,' ',T->pos);
+                        display(T->ptr[3],indent+6);      //显示循环体
                         break;
 	case IF_THEN:       printf("%*c条件语句(IF_THEN)：(%d)\n",indent,' ',T->pos);
                         printf("%*c条件：\n",indent+3,' ');
@@ -116,6 +126,31 @@ void display(struct ASTNode *T,int indent)
                             T0=T0->ptr[1];
                             }
                         break;
+    case SWITCH:        printf("%*cSWITCH语句：\n",indent,' ');
+                        display(T->ptr[0],indent+3); 
+                        break;
+    case CaseList:      printf("%*cCaseList：\n",indent,' ');
+                        while (T) {  //ARGS表示实际参数表达式序列结点，其第一棵子树为其一个实际参数表达式，第二棵子树为剩下的
+                        if(strcmp(T->type_id,"DEFAULT")==0)
+                            display(T,indent);
+                        else{
+                            printf("%*cCase：\n",indent,' ',i++);
+                            struct ASTNode *T0=T->ptr[0];
+                            struct ASTNode *T1=T->ptr[1];
+                            display(T0,indent+3);
+                            printf("%*cCaseStmtList: \n",indent+3,' ');           
+                            display(T1,indent+3);
+                        }
+                        T=T->ptr[2];
+                        }
+                        break;
+    case CaseStmtList:   
+                        while (T) {  //ARGS表示实际参数表达式序列结点，其第一棵子树为其一个实际参数表达式，第二棵子树为剩下的
+                        struct ASTNode *T0=T->ptr[0];
+                        display(T0,indent+3);
+                        T=T->ptr[1];
+                        }
+                        break;
 	case ID:	        printf("%*cID： %s\n",indent,' ',T->type_id);
                         break;
 	case INT:	        printf("%*cINT：%d\n",indent,' ',T->type_int);
@@ -152,6 +187,9 @@ void display(struct ASTNode *T,int indent)
     case BREAK:        printf("%*cBREAK： %s\n",indent,' ',T->type_id);
                         break;
     case CONTINUE:     printf("%*cCONTINUE:  %s\n",indent,' ',T->type_id);
+                            break;
+    case DEFAULT:     printf("%*cDEFAULT:  %s\n",indent,' ',T->type_id);
+                      display(T->ptr[0],indent+3);
                             break;
 	case ASSIGNOP:
 	case AND:

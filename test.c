@@ -43,5 +43,20 @@ int main()
             continue;
         }
     }
+    for(;;)
+        a++;
+    for(i=1;i<2;i++){
+        if(a==1)
+            break;
+    }
+
+    switch ( menu() )            
+    {
+     case 'a':
+     case 'A': action1();            
+             break;          
+     default:  action2();
+    }
+
     return i;
 }//last line note

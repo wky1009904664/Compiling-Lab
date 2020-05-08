@@ -41,11 +41,16 @@ selfdecR {id}"--"
 "break"		 {printf("BREAK : %s in line : %d\n",yytext,yylineno);return BREAK;}
 "continue"   {printf("CONTINUE : %s in line : %d\n",yytext,yylineno);return CONTINUE;}
 "struct"	 {printf("STRUCT : %s in line : %d\n",yytext,yylineno);return STRUCT;}
+"for"		 {printf("FOR : %s in line : %d\n",yytext,yylineno);return FOR;}
+"switch"	 {printf("SWITCH : %s in line : %d\n",yytext,yylineno);return SWITCH;}
+"case"	 	 {printf("CASE : %s in line : %d\n",yytext,yylineno);return CASE;}
+"default"	 {printf("DEFAULT : %s in line : %d\n",yytext,yylineno);return DEFAULT;}
 
 {id}        {printf("Identifier : %s in line : %d\n",yytext,yylineno);strcpy(yylval.type_id,  yytext); return ID;/*由于关键字的形式也符合标识符的规则，所以把关键字的处理全部放在标识符的前面，优先识别*/}
 ";"			{printf("SEMI : %s in line : %d\n",yytext,yylineno);return SEMI;}
 ","			{printf("COMMA : %s in line : %d\n",yytext,yylineno);return COMMA;}
 "."			{printf("DOT : %s in line : %d\n",yytext,yylineno);return DOT;}
+":"			{printf("COLON : %s in line : %d\n",yytext,yylineno);return COLON;}
 ">"|"<"|">="|"<="|"=="|"!=" {printf("RELOP : %s in line : %d\n",yytext,yylineno);strcpy(yylval.type_id, yytext);;return RELOP;}
 "="			{printf("ASSIGNOP : %s in line : %d\n",yytext,yylineno);return ASSIGNOP;}
 "+"			{printf("PLUS : %s in line : %d\n",yytext,yylineno);return PLUS;}

@@ -70,8 +70,8 @@
      IF = 286,
      ELSE = 287,
      WHILE = 288,
-     RETURN = 289,
-     FOR = 290,
+     FOR = 289,
+     RETURN = 290,
      SWITCH = 291,
      CASE = 292,
      COLON = 293,
@@ -114,7 +114,9 @@
      EQ = 330,
      NEQ = 331,
      UMINUS = 332,
-     LOWER_THEN_ELSE = 333
+     LOWER_THEN_ELSE = 333,
+     CaseStmtList = 334,
+     CaseList = 335
    };
 #endif
 

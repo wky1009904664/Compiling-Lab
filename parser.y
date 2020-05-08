@@ -21,10 +21,11 @@ void display(struct ASTNode *,int);
 };
 
 //  %type 定义非终结符的语义值类型
-%type  <ptr> program ExtDefList ExtDef  Specifier ExtDecList FuncDec CompSt VarList VarDec ParamDec Stmt StmList DefList Def DecList Dec Exp Args //CaseStmtList0 CaseStmtList
-%type <ptr> StructSpecifier StructName SDefList SDef SDecList SDec LoopStmt LoopCompSt LoopStmList
-
-
+%type  <ptr> program ExtDefList ExtDef  Specifier ExtDecList FuncDec CompSt VarList VarDec ParamDec Stmt StmList DefList Def DecList Dec Exp Args 
+%type <ptr> StructSpecifier StructName SDefList SDef SDecList SDec
+%type <ptr>  LoopStmt LoopCompSt LoopStmList EmpArgs CaseList ConstExp
+%type <ptr> CaseStmt CaseStmtList 
+ 
 //% token 定义终结符的语义值类型
 %token <type_int> INT              /*指定INT的语义值是type_int，有词法分析得到的数值*/
 %token <type_id> ID  RELOP  TYPE   /*指定ID,RELOP 的语义值是type_id，有词法分析得到的标识符字符串*/
@@ -34,8 +35,8 @@ void display(struct ASTNode *,int);
 
 %token BREAK CONTINUE STRUCT
 %token DPLUS LP RP LC RC SEMI COMMA      /*用bison对该文件编译时，带参数-d，生成的.tab.h中给这些单词进行编码，可在lex.l中包含parser.tab.h使用这些单词种类码*/
-%token PLUS MINUS STAR DIV ASSIGNOP AND OR NOT IF ELSE WHILE RETURN FOR SWITCH CASE COLON DEFAULT
-%token LB RB DOT
+%token PLUS MINUS STAR DIV ASSIGNOP AND OR NOT IF ELSE WHILE FOR RETURN SWITCH CASE COLON DEFAULT
+%token LB RB DOT 
 %token ArrayDef ArrayUse
 %token StructDec StructDef StructVal
 
@@ -110,21 +111,48 @@ Stmt:   Exp SEMI    {$$=mknode(1,EXP_STMT,yylineno,$1);}
       | IF LP Exp RP Stmt %prec LOWER_THEN_ELSE   {$$=mknode(2,IF_THEN,yylineno,$3,$5);}
       | IF LP Exp RP Stmt ELSE Stmt   {$$=mknode(3,IF_THEN_ELSE,yylineno,$3,$5,$7);}
       | WHILE LP Exp RP LoopStmt {$$=mknode(2,WHILE,yylineno,$3,$5);}
+      | FOR LP EmpArgs SEMI EmpArgs SEMI EmpArgs RP LoopStmt {$$=mknode(4,FOR,yylineno,$3,$5,$7,$9);}
+      | SWITCH LP Exp RP LC CaseList RC {$$=mknode(1,SWITCH,yylineno,$6);}
       ;
 
+CaseStmtList: {$$=NULL; }  
+        | CaseStmt CaseStmtList  {$$=mknode(2,CaseStmtList,yylineno,$1,$2);}
+        ;
+CaseStmt:Exp SEMI    {$$=mknode(1,EXP_STMT,yylineno,$1);}
+         | LoopCompSt      {$$=$1;}      //复合语句结点直接最为语句结点，不再生成新的结点
+         | RETURN Exp SEMI   {$$=mknode(1,RETURN,yylineno,$2);}
+         | IF LP Exp RP LoopStmt %prec LOWER_THEN_ELSE   {$$=mknode(2,IF_THEN,yylineno,$3,$5);}
+         | IF LP Exp RP LoopStmt ELSE LoopStmt   {$$=mknode(3,IF_THEN_ELSE,yylineno,$3,$5,$7);}
+         | WHILE LP Exp RP LoopStmt {$$=mknode(2,WHILE,yylineno,$3,$5);}
+         | FOR LP EmpArgs SEMI EmpArgs SEMI EmpArgs RP LoopStmt {$$=mknode(4,FOR,yylineno,$3,$5,$7,$9);}
+         | SWITCH LP Exp RP LC CaseList RC {$$=mknode(1,SWITCH,yylineno,$6);}
+         | BREAK SEMI{$$=mknode(0,BREAK,yylineno);strcpy($$->type_id,"BREAK");}
+         ;
+
+CaseList:CASE ConstExp COLON CaseStmtList CaseList{$$=mknode(3,CaseList,yylineno,$2,$4,$5);strcpy($$->type_id,"CASE");}
+        | DEFAULT COLON CaseStmtList{$$=mknode(1,DEFAULT,yylineno,$3);strcpy($$->type_id,"DEFAULT");}
+        | {$$=NULL}
+
 LoopCompSt: LC DefList LoopStmList RC    {$$=mknode(2,COMP_STM,yylineno,$2,$3);}
-       ;
+          ;
 LoopStmList:{$$=NULL; }  
         | LoopStmt LoopStmList  {$$=mknode(2,STM_LIST,yylineno,$1,$2);}
+        ;
 LoopStmt: Exp SEMI    {$$=mknode(1,EXP_STMT,yylineno,$1);}
          | LoopCompSt      {$$=$1;}      //复合语句结点直接最为语句结点，不再生成新的结点
          | RETURN Exp SEMI   {$$=mknode(1,RETURN,yylineno,$2);}
          | IF LP Exp RP LoopStmt %prec LOWER_THEN_ELSE   {$$=mknode(2,IF_THEN,yylineno,$3,$5);}
          | IF LP Exp RP LoopStmt ELSE LoopStmt   {$$=mknode(3,IF_THEN_ELSE,yylineno,$3,$5,$7);}
          | WHILE LP Exp RP LoopStmt {$$=mknode(2,WHILE,yylineno,$3,$5);}
+         | FOR LP EmpArgs SEMI EmpArgs SEMI EmpArgs RP LoopStmt {$$=mknode(4,FOR,yylineno,$3,$5,$7,$9);}
+         | SWITCH LP Exp RP LC CaseList RC {$$=mknode(1,SWITCH,yylineno,$6);}
          | CONTINUE SEMI {$$=mknode(0,CONTINUE,yylineno);strcpy($$->type_id,"CONTINUE");}
          | BREAK SEMI{$$=mknode(0,BREAK,yylineno);strcpy($$->type_id,"BREAK");}
+         ;
 
+EmpArgs:Args{$$=$1}
+        |{$$=NULL}
+        ;
 DefList: {$$=NULL; }
         | Def DefList {$$=mknode(2,DEF_LIST,yylineno,$1,$2);}
         | error SEMI   {$$=NULL;}
@@ -175,6 +203,10 @@ Exp:    Exp ASSIGNOP Exp {$$=mknode(2,ASSIGNOP,yylineno,$1,$3);strcpy($$->type_i
       | SelfDecR      {$$=mknode(0,SelfDecR,yylineno);strcpy($$->type_id,$1);}
       | ID LB Exp RB {$$=mknode(2,ArrayUse,yylineno,$1,$3);strcpy($$->type_id,$1);}   
       | Exp DOT ID {$$=mknode(1,StructVal,yylineno,$1);strcpy($$->type_id,$3);}   
+      ;
+ConstExp:  INT           {$$=mknode(0,INT,yylineno);$$->type_int=$1;$$->type=INT;}
+      | FLOAT         {$$=mknode(0,FLOAT,yylineno);$$->type_float=$1;$$->type=FLOAT;}
+      | CHAR          {$$=mknode(0,CHAR,yylineno);$$->type_char=$1;$$->type=CHAR;}
       ;
 Args:    Exp COMMA Args    {$$=mknode(2,ARGS,yylineno,$1,$3);}
        | Exp               {$$=mknode(1,ARGS,yylineno,$1);}
