@@ -56,6 +56,7 @@ selfdecR {id}"--"
 "+"			{printf("PLUS : %s in line : %d\n",yytext,yylineno);return PLUS;}
 "-"			{printf("MINUS : %s in line : %d\n",yytext,yylineno);return MINUS;}
 "*"			{printf("STAR : %s in line : %d\n",yytext,yylineno);return STAR;}
+"&"			{printf("ADDR : %s in line : %d\n",yytext,yylineno);return ADDR;}
 "/"			{printf("DIV : %s in line : %d\n",yytext,yylineno);return DIV;}
 "&&"        {printf("AND : %s in line : %d\n",yytext,yylineno);return AND;}
 "||"        {printf("OR : %s in line : %d\n",yytext,yylineno);return OR;}

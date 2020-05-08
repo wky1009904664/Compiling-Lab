@@ -1,6 +1,7 @@
-int a,b,c;/*a
-bc*/
-float m,n;//signle note test
+int a,b,c;/*,
+     CaseStmtList = 336,
+     CaseList = 337*/
+float m,n;//printf("Type_id:%s\n",T0->type_id);
 int arr[3];
 int fibo(int a) {
     if (a==1 || a==2)
@@ -23,10 +24,12 @@ int main()
     int m,n,i,ssf[3];
     int arrr[3][2];
     struct A a;
+    int *a = &b;
     char c = 'a';
     arr[a[2]] = 1;
     m = read();
-    i = 1;
+    i = -1;
+    *a = 1;
     i=(m+n)/i;
     ++i;
     i--;

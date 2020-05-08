@@ -286,51 +286,51 @@ static void yy_fatal_error YY_PROTO(( yyconst char msg[] ));
 	*yy_cp = '\0'; \
 	yy_c_buf_p = yy_cp;
 
-#define YY_NUM_RULES 51
-#define YY_END_OF_BUFFER 52
-static yyconst short int yy_acclist[194] =
+#define YY_NUM_RULES 52
+#define YY_END_OF_BUFFER 53
+static yyconst short int yy_acclist[195] =
     {   0,
-       52,   50,   51,   43,   50,   51,   42,   51,   31,   50,
-       51,   50,   51,   50,   51,   36,   50,   51,   37,   50,
-       51,   27,   50,   51,   25,   50,   51,   20,   50,   51,
-       26,   50,   51,   21,   50,   51,   28,   50,   51,    2,
-       50,   51,   22,   50,   51,   19,   50,   51,   23,   50,
-       51,   24,   50,   51,   23,   50,   51,   18,   50,   51,
-       40,   50,   51,   41,   50,   51,   18,   50,   51,   18,
-       50,   51,   18,   50,   51,   18,   50,   51,   18,   50,
-       51,   18,   50,   51,   18,   50,   51,   18,   50,   51,
-       18,   50,   51,   38,   50,   51,   50,   51,   39,   50,
+       53,   51,   52,   44,   51,   52,   43,   52,   32,   51,
+       52,   28,   51,   52,   51,   52,   37,   51,   52,   38,
+       51,   52,   27,   51,   52,   25,   51,   52,   20,   51,
+       52,   26,   51,   52,   21,   51,   52,   29,   51,   52,
+        2,   51,   52,   22,   51,   52,   19,   51,   52,   23,
+       51,   52,   24,   51,   52,   23,   51,   52,   18,   51,
+       52,   41,   51,   52,   42,   51,   52,   18,   51,   52,
+       18,   51,   52,   18,   51,   52,   18,   51,   52,   18,
+       51,   52,   18,   51,   52,   18,   51,   52,   18,   51,
+       52,   18,   51,   52,   39,   51,   52,   51,   52,   40,
 
-       51,   23,   29,    3,    1,    3,    2,   18,   18,   18,
-       18,   18,   18,   18,   18,   18,    8,   18,   18,   18,
-       18,   18,   18,   30,   49,   49,   32,   34,    1,    1,
-       33,   35,   18,   18,   18,   18,   18,   18,   18,   14,
-       18,    4,   18,   18,   18,   18,   18,   44,   48,   46,
-       47,   45,   32,   34,    1,   18,   16,   18,    6,   18,
-       18,   18,    9,   18,   18,   18,   18,   18,   18,   11,
-       18,   18,   18,    5,   18,   18,   18,   18,   10,   18,
-       18,   18,    7,   18,   13,   18,   15,   18,   18,   17,
-       18,   12,   18
+       51,   52,   23,   30,    3,    1,    3,    2,   18,   18,
+       18,   18,   18,   18,   18,   18,   18,    8,   18,   18,
+       18,   18,   18,   18,   31,   50,   50,   33,   35,    1,
+        1,   34,   36,   18,   18,   18,   18,   18,   18,   18,
+       14,   18,    4,   18,   18,   18,   18,   18,   45,   49,
+       47,   48,   46,   33,   35,    1,   18,   16,   18,    6,
+       18,   18,   18,    9,   18,   18,   18,   18,   18,   18,
+       11,   18,   18,   18,    5,   18,   18,   18,   18,   10,
+       18,   18,   18,    7,   18,   13,   18,   15,   18,   18,
+       17,   18,   12,   18
 
     } ;
 
 static yyconst short int yy_accept[132] =
     {   0,
-        1,    1,    1,    2,    4,    7,    9,   12,   14,   16,
-       19,   22,   25,   28,   31,   34,   37,   40,   43,   46,
-       49,   52,   55,   58,   61,   64,   67,   70,   73,   76,
-       79,   82,   85,   88,   91,   94,   97,   99,  102,  103,
-      104,  104,  104,  104,  104,  105,  105,  106,  107,  108,
-      108,  108,  109,  110,  111,  112,  113,  114,  115,  116,
-      117,  119,  120,  121,  122,  123,  124,  125,  126,  127,
-      127,  127,  127,  127,  128,  129,  129,  129,  130,  131,
-      132,  133,  134,  135,  136,  137,  138,  139,  140,  142,
-      144,  145,  146,  147,  148,  149,  150,  151,  152,  153,
+        1,    1,    1,    2,    4,    7,    9,   12,   15,   17,
+       20,   23,   26,   29,   32,   35,   38,   41,   44,   47,
+       50,   53,   56,   59,   62,   65,   68,   71,   74,   77,
+       80,   83,   86,   89,   92,   95,   98,  100,  103,  104,
+      105,  105,  105,  105,  105,  106,  106,  107,  108,  109,
+      109,  109,  110,  111,  112,  113,  114,  115,  116,  117,
+      118,  120,  121,  122,  123,  124,  125,  126,  127,  128,
+      128,  128,  128,  128,  129,  130,  130,  130,  131,  132,
+      133,  134,  135,  136,  137,  138,  139,  140,  141,  143,
+      145,  146,  147,  148,  149,  150,  151,  152,  153,  154,
 
-      154,  155,  156,  157,  159,  161,  162,  163,  165,  166,
-      167,  168,  169,  170,  172,  173,  174,  176,  177,  178,
-      179,  181,  182,  183,  185,  187,  189,  190,  192,  194,
-      194
+      155,  156,  157,  158,  160,  162,  163,  164,  166,  167,
+      168,  169,  170,  171,  173,  174,  175,  177,  178,  179,
+      180,  182,  183,  184,  186,  188,  190,  191,  193,  195,
+      195
     } ;
 
 static yyconst int yy_ec[256] =
@@ -910,136 +910,141 @@ YY_RULE_SETUP
 case 28:
 YY_RULE_SETUP
 #line 59 "lex.l"
-{printf("DIV : %s in line : %d\n",yytext,yylineno);return DIV;}
+{printf("ADDR : %s in line : %d\n",yytext,yylineno);return ADDR;}
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
 #line 60 "lex.l"
-{printf("AND : %s in line : %d\n",yytext,yylineno);return AND;}
+{printf("DIV : %s in line : %d\n",yytext,yylineno);return DIV;}
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
 #line 61 "lex.l"
-{printf("OR : %s in line : %d\n",yytext,yylineno);return OR;}
+{printf("AND : %s in line : %d\n",yytext,yylineno);return AND;}
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
 #line 62 "lex.l"
-{printf("NOT : %s in line : %d\n",yytext,yylineno);return NOT;}
+{printf("OR : %s in line : %d\n",yytext,yylineno);return OR;}
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
 #line 63 "lex.l"
+{printf("NOT : %s in line : %d\n",yytext,yylineno);return NOT;}
+	YY_BREAK
+case 33:
+YY_RULE_SETUP
+#line 64 "lex.l"
 {
 			 strcpy(yylval.type_id,  yytext+2);
 			 printf("SelfLeftPlus : %s in line : %d\n",yylval.type_id,yylineno);
 			 return SelfPlusL;}
 	YY_BREAK
-case 33:
+case 34:
 YY_RULE_SETUP
-#line 67 "lex.l"
+#line 68 "lex.l"
 {
 			 strncpy(yylval.type_id,  yytext, strlen(yytext)-2);
 			 printf("SelfRightPlus : %s in line : %d\n",yylval.type_id,yylineno); 
 			 return SelfPlusR;}
 	YY_BREAK
-case 34:
+case 35:
 YY_RULE_SETUP
-#line 71 "lex.l"
+#line 72 "lex.l"
 {
 			 strcpy(yylval.type_id,  yytext+2);
 			 printf("SelfLeftDec : %s in line : %d\n",yylval.type_id,yylineno);
 		 	 return SelfDecL;}
 	YY_BREAK
-case 35:
+case 36:
 YY_RULE_SETUP
-#line 75 "lex.l"
+#line 76 "lex.l"
 {
 			 strncpy(yylval.type_id,  yytext, strlen(yytext)-2);
 			 printf("SelfRightDec : %s in line : %d\n",yylval.type_id,yylineno);
 			 return SelfDecR;}
 	YY_BREAK
-case 36:
-YY_RULE_SETUP
-#line 79 "lex.l"
-{printf("LP : %s in line : %d\n",yytext,yylineno);return LP;}
-	YY_BREAK
 case 37:
 YY_RULE_SETUP
 #line 80 "lex.l"
-{printf("RP : %s in line : %d\n",yytext,yylineno);return RP;}
+{printf("LP : %s in line : %d\n",yytext,yylineno);return LP;}
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
 #line 81 "lex.l"
-{printf("LC : %s in line : %d\n",yytext,yylineno);return LC;}
+{printf("RP : %s in line : %d\n",yytext,yylineno);return RP;}
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
 #line 82 "lex.l"
-{printf("RC : %s in line : %d\n",yytext,yylineno);return RC;}
+{printf("LC : %s in line : %d\n",yytext,yylineno);return LC;}
 	YY_BREAK
 case 40:
 YY_RULE_SETUP
 #line 83 "lex.l"
-{printf("LB : %s in line : %d\n",yytext,yylineno);return LB;}
+{printf("RC : %s in line : %d\n",yytext,yylineno);return RC;}
 	YY_BREAK
 case 41:
 YY_RULE_SETUP
 #line 84 "lex.l"
-{printf("RB : %s in line : %d\n",yytext,yylineno);return RB;}
+{printf("LB : %s in line : %d\n",yytext,yylineno);return LB;}
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
-#line 86 "lex.l"
-{yycolumn=1;}   
+#line 85 "lex.l"
+{printf("RB : %s in line : %d\n",yytext,yylineno);return RB;}
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
 #line 87 "lex.l"
-{;}   
+{yycolumn=1;}   
 	YY_BREAK
 case 44:
 YY_RULE_SETUP
 #line 88 "lex.l"
-{printf("Char : %s in line : %d\n",yytext,yylineno);yylval.type_char = '\'';return CHAR;}
+{;}   
 	YY_BREAK
 case 45:
 YY_RULE_SETUP
 #line 89 "lex.l"
-{printf("Char : %s in line : %d\n",yytext,yylineno);yylval.type_char = '\t';return CHAR;}
+{printf("Char : %s in line : %d\n",yytext,yylineno);yylval.type_char = '\'';return CHAR;}
 	YY_BREAK
 case 46:
 YY_RULE_SETUP
 #line 90 "lex.l"
-{printf("Char : %s in line : %d\n",yytext,yylineno);yylval.type_char = '\n';return CHAR;}
+{printf("Char : %s in line : %d\n",yytext,yylineno);yylval.type_char = '\t';return CHAR;}
 	YY_BREAK
 case 47:
 YY_RULE_SETUP
 #line 91 "lex.l"
-{printf("Char : %s in line : %d\n",yytext,yylineno);yylval.type_char = '\r';return CHAR;}
+{printf("Char : %s in line : %d\n",yytext,yylineno);yylval.type_char = '\n';return CHAR;}
 	YY_BREAK
 case 48:
 YY_RULE_SETUP
 #line 92 "lex.l"
-{printf("Char : %s in line : %d\n",yytext,yylineno);yylval.type_char = '\\';return CHAR;}
+{printf("Char : %s in line : %d\n",yytext,yylineno);yylval.type_char = '\r';return CHAR;}
 	YY_BREAK
 case 49:
 YY_RULE_SETUP
 #line 93 "lex.l"
-{printf("Char : %s in line : %d\n",yytext,yylineno);yylval.type_char=yytext[1]; return CHAR;}
+{printf("Char : %s in line : %d\n",yytext,yylineno);yylval.type_char = '\\';return CHAR;}
 	YY_BREAK
 case 50:
 YY_RULE_SETUP
-#line 95 "lex.l"
-{printf("Error type A :Mysterious character \"%s\"\n\t at Line %d\n",yytext,yylineno);}
+#line 94 "lex.l"
+{printf("Char : %s in line : %d\n",yytext,yylineno);yylval.type_char=yytext[1]; return CHAR;}
 	YY_BREAK
 case 51:
 YY_RULE_SETUP
 #line 96 "lex.l"
+{printf("Error type A :Mysterious character \"%s\"\n\t at Line %d\n",yytext,yylineno);}
+	YY_BREAK
+case 52:
+YY_RULE_SETUP
+#line 97 "lex.l"
 ECHO;
 	YY_BREAK
-#line 1043 "lex.yy.c"
+#line 1048 "lex.yy.c"
 			case YY_STATE_EOF(INITIAL):
 				yyterminate();
 
@@ -1923,7 +1928,7 @@ int main()
 	return 0;
 	}
 #endif
-#line 96 "lex.l"
+#line 97 "lex.l"
 
 
 /* 和bison联用时，不需要这部分

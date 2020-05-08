@@ -113,14 +113,18 @@ void display(struct ASTNode *T,int indent)
     case DEC_LIST:      printf("%*c变量名：\n",indent,' ');
                         T0=T;
                         while (T0) {
+                            //printf("Type_id:%s\n",T0->ptr[0]->type_id);
                             if (T0->ptr[0]->kind==ID)
                                 printf("%*c %s\n",indent+6,' ',T0->ptr[0]->type_id);
                             else if (T0->ptr[0]->kind==ASSIGNOP)
                                 {
-                                printf("%*c %s ASSIGNOP\n ",indent+6,' ',T0->ptr[0]->ptr[0]->type_id);
+                                printf("%*c %s %s ASSIGNOP\n ",indent+6,' ',(T0->ptr[0]->ptr[0]->kind == Pointer?"Pointer":""),T0->ptr[0]->ptr[0]->type_id);
                                 display(T0->ptr[0]->ptr[1],indent+strlen(T0->ptr[0]->ptr[0]->type_id)+7);        //显示初始化表达式
                                 }
                             else if(T0->ptr[0]->kind==ArrayDef){
+                                display(T0->ptr[0],indent+7);
+                            }
+                            else if(T0->ptr[0]->kind==Pointer){
                                 display(T0->ptr[0],indent+7);
                             }
                             T0=T0->ptr[1];
@@ -190,6 +194,9 @@ void display(struct ASTNode *T,int indent)
                             break;
     case DEFAULT:     printf("%*cDEFAULT:  %s\n",indent,' ',T->type_id);
                       display(T->ptr[0],indent+3);
+                            break;
+    case Pointer:     printf("%*cPointer :  %s\n",indent,' ',T->type_id);
+                      
                             break;
 	case ASSIGNOP:
 	case AND:
