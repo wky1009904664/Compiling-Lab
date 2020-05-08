@@ -22,7 +22,7 @@ void display(struct ASTNode *,int);
 
 //  %type 定义非终结符的语义值类型
 %type  <ptr> program ExtDefList ExtDef  Specifier ExtDecList FuncDec CompSt VarList VarDec ParamDec Stmt StmList DefList Def DecList Dec Exp Args //CaseStmtList0 CaseStmtList
-%type <ptr> StructSpecifier StructName SDefList SDef SDecList SDec
+%type <ptr> StructSpecifier StructName SDefList SDef SDecList SDec LoopStmt LoopCompSt LoopStmList
 
 
 //% token 定义终结符的语义值类型
@@ -109,8 +109,22 @@ Stmt:   Exp SEMI    {$$=mknode(1,EXP_STMT,yylineno,$1);}
       | RETURN Exp SEMI   {$$=mknode(1,RETURN,yylineno,$2);}
       | IF LP Exp RP Stmt %prec LOWER_THEN_ELSE   {$$=mknode(2,IF_THEN,yylineno,$3,$5);}
       | IF LP Exp RP Stmt ELSE Stmt   {$$=mknode(3,IF_THEN_ELSE,yylineno,$3,$5,$7);}
-      | WHILE LP Exp RP Stmt {$$=mknode(2,WHILE,yylineno,$3,$5);}
+      | WHILE LP Exp RP LoopStmt {$$=mknode(2,WHILE,yylineno,$3,$5);}
       ;
+
+LoopCompSt: LC DefList LoopStmList RC    {$$=mknode(2,COMP_STM,yylineno,$2,$3);}
+       ;
+LoopStmList:{$$=NULL; }  
+        | LoopStmt LoopStmList  {$$=mknode(2,STM_LIST,yylineno,$1,$2);}
+LoopStmt: Exp SEMI    {$$=mknode(1,EXP_STMT,yylineno,$1);}
+         | LoopCompSt      {$$=$1;}      //复合语句结点直接最为语句结点，不再生成新的结点
+         | RETURN Exp SEMI   {$$=mknode(1,RETURN,yylineno,$2);}
+         | IF LP Exp RP LoopStmt %prec LOWER_THEN_ELSE   {$$=mknode(2,IF_THEN,yylineno,$3,$5);}
+         | IF LP Exp RP LoopStmt ELSE LoopStmt   {$$=mknode(3,IF_THEN_ELSE,yylineno,$3,$5,$7);}
+         | WHILE LP Exp RP LoopStmt {$$=mknode(2,WHILE,yylineno,$3,$5);}
+         | CONTINUE SEMI {$$=mknode(0,CONTINUE,yylineno);strcpy($$->type_id,"CONTINUE");}
+         | BREAK SEMI{$$=mknode(0,BREAK,yylineno);strcpy($$->type_id,"BREAK");}
+
 DefList: {$$=NULL; }
         | Def DefList {$$=mknode(2,DEF_LIST,yylineno,$1,$2);}
         | error SEMI   {$$=NULL;}

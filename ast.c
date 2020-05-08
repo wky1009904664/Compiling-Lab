@@ -111,7 +111,7 @@ void display(struct ASTNode *T,int indent)
                                 display(T0->ptr[0]->ptr[1],indent+strlen(T0->ptr[0]->ptr[0]->type_id)+7);        //显示初始化表达式
                                 }
                             else if(T0->ptr[0]->kind==ArrayDef){
-                                display(T0->ptr[0],indent+strlen(T0->ptr[0]->ptr[0]->type_id)+7);
+                                display(T0->ptr[0],indent+7);
                             }
                             T0=T0->ptr[1];
                             }
@@ -149,6 +149,10 @@ void display(struct ASTNode *T,int indent)
     case StructVal:    printf("%*cStruct属性： %s\n",indent,' ',T->type_id);
                        display(T->ptr[0],indent+3);
                         break;
+    case BREAK:        printf("%*cBREAK： %s\n",indent,' ',T->type_id);
+                        break;
+    case CONTINUE:     printf("%*cCONTINUE:  %s\n",indent,' ',T->type_id);
+                            break;
 	case ASSIGNOP:
 	case AND:
 	case OR:

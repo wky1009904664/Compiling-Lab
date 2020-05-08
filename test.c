@@ -9,6 +9,7 @@ int fibo(int a) {
     {
         if(a==3)
             return 2;
+        //break;
     }
     
     return fibo(a-1) + fibo(a-2);
@@ -29,14 +30,18 @@ int main()
     i=(m+n)/i;
     ++i;
     i--;
-    
     a.b.c = 1;
+    //break;
     while(i<=m)
     {
         n = fibo(i);
-        write(n);
         i = i+1;
-        //break;
+        if(i==1)
+            break;
+        else if(i==2){
+            write(n);
+            continue;
+        }
     }
     return i;
 }//last line note

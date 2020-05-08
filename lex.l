@@ -21,7 +21,7 @@ id   [A-Za-z][A-Za-z0-9]*
 int    [0-9]+
 float  ([0-9]*\.[0-9]+)|([0-9]+\.)
 char '[^\t\n\t]'
-note  ("//".*\n?)|("/"\*(.|\r\n)*\*"/")
+note  ("//".*\n?)|("/"\*(.|\n)*\*"/")
 selfpulsL "++"{id}
 selfpulsR {id}"++"
 selfdecL "--"{id}
