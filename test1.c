@@ -14,7 +14,10 @@ int main()
     a.b=10.56;
     for(i=1;i<10;i++)
     {
-        if (i!=j) break;
+        int i = 0;
+        if (i!=j) {
+            break;
+        }
         else continue;
     }
     return !(1+a);

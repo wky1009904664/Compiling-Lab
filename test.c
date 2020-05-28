@@ -25,7 +25,6 @@ int main()
     int arrr[3][2];
     struct A a;
     int *a = &b;
-    break;
     char c = 'a';
     float f = 1.4;
     string str = "this is a string";
