@@ -11,7 +11,7 @@ extern FILE *yyin;
 void yyerror(const char* fmt, ...);
 void display(struct ASTNode *,int);
 %}
-
+//gcc -o parser lex.yy.c parser.tab.c ast.c 
 %union {
 	int    type_int;
 	float  type_float;
@@ -36,7 +36,7 @@ void display(struct ASTNode *,int);
 %token BREAK CONTINUE STRUCT
 %token DPLUS LP RP LC RC SEMI COMMA      /*用bison对该文件编译时，带参数-d，生成的.tab.h中给这些单词进行编码，可在lex.l中包含parser.tab.h使用这些单词种类码*/
 %token PLUS MINUS STAR DIV ASSIGNOP AND OR NOT IF ELSE WHILE FOR RETURN SWITCH CASE COLON DEFAULT
-%token LB RB DOT ADDR DECASS PLUSASS
+%token LB RB DOT ADDR DECASS PLUSASS STARASS DIVASS
 %token ArrayDef ArrayUse
 %token StructDec StructDef StructVal
 
@@ -45,7 +45,7 @@ void display(struct ASTNode *,int);
 %token FUNC_CALL ARGS FUNCTION PARAM ARG CALL LABEL GOTO JLT JLE JGT JGE EQ NEQ Pointer
 
 
-%left ASSIGNOP PLUSASS DECASS
+%left ASSIGNOP PLUSASS DECASS STARASS DIVASS
 %left OR
 %left AND
 %left RELOP
@@ -60,7 +60,9 @@ void display(struct ASTNode *,int);
 
 %%
 
-program: ExtDefList    { display($1,0); }     //显示语法树,语义分析
+program: ExtDefList    { //display($1,0); 
+                         semantic_Analysis0($1); 
+                        }     //显示语法树,语义分析
          ; 
 ExtDefList: {$$=NULL;}
           | ExtDef ExtDefList {$$=mknode(2,EXT_DEF_LIST,yylineno,$1,$2);}   //每一个EXTDEFLIST的结点，其第1棵子树对应一个外部变量声明或函数
@@ -119,6 +121,7 @@ StmtBase:   Exp SEMI    {$$=mknode(1,EXP_STMT,yylineno,$1);}
       | RETURN Exp SEMI   {$$=mknode(1,RETURN,yylineno,$2);}
       | WHILE LP Exp RP LoopStmt {$$=mknode(2,WHILE,yylineno,$3,$5);}
       | FOR LP EmpArgs SEMI EmpArgs SEMI EmpArgs RP LoopStmt {$$=mknode(4,FOR,yylineno,$3,$5,$7,$9);}
+      | FOR LP Def Exp SEMI Exp RP Stmt{$$=mknode(4,FOR,yylineno,$3,$4,$6,$8);} 
       | SWITCH LP Exp RP LC CaseList RC {$$=mknode(2,SWITCH,yylineno,$3,$6);}
       ;
 Stmt:   StmtBase {$$=$1;}
@@ -187,6 +190,8 @@ Exp:    Exp ASSIGNOP Exp {$$=mknode(2,ASSIGNOP,yylineno,$1,$3);strcpy($$->type_i
       | Exp MINUS Exp {$$=mknode(2,MINUS,yylineno,$1,$3);strcpy($$->type_id,"MINUS");}
       | Exp PLUSASS Exp  {$$=mknode(2,PLUSASS,yylineno,$1,$3);strcpy($$->type_id,"PLUSASS");}
       | Exp DECASS Exp  {$$=mknode(2,DECASS,yylineno,$1,$3);strcpy($$->type_id,"DECASS");}
+      | Exp STARASS Exp  {$$=mknode(2,STARASS,yylineno,$1,$3);strcpy($$->type_id,"STARASS");}
+      | Exp DIVASS Exp  {$$=mknode(2,DIVASS,yylineno,$1,$3);strcpy($$->type_id,"DIVASS");}
       | Exp STAR Exp  {$$=mknode(2,STAR,yylineno,$1,$3);strcpy($$->type_id,"STAR");}
       | Exp DIV Exp   {$$=mknode(2,DIV,yylineno,$1,$3);strcpy($$->type_id,"DIV");}
       | LP Exp RP     {$$=$2;}
