@@ -136,10 +136,10 @@ void ext_var_list(struct ASTNode *T) {  //处理变量列表
 			tmplh.high = T0->ptr[1]->type_int - 1;
 			tmplh.diff = tmplh.high - tmplh.low + 1;
 			insVector->vc.insert(insVector->vc.begin(), tmplh);
-			printf("%d\n", T0->ptr[0]->kind);
+			//printf("%d\n", T0->ptr[0]->kind);
 			if (T0->ptr[0]->kind == ID) {
-				printf("%s\n", T->ptr[0]->type_id);
-				rtn = fillSymbolTable(T->ptr[0]->type_id, newAlias(), LEV, T->type, 'A', T->offset);  //最后一个变量名
+				printf("%s\n", T->ptr[0]->ptr[0]->type_id);
+				rtn = fillSymbolTable(T->ptr[0]->ptr[0]->type_id, newAlias(), LEV, T->type, 'A', T->offset);  //最后一个变量名
 				strcpy(T->type_id, T->ptr[0]->type_id);
 				if(rtn == -1)
 					semantic_error(T0->ptr[0]->pos, T0->ptr[0]->type_id, "变量重复定义");
@@ -305,7 +305,10 @@ void Exp(struct ASTNode *T)
 		case ArrayUse:
 			//Exp(T->ptr[0]);
 			//printf("%s\n", T->ptr[0]->type_id);
-			rtn = searchSymbolTable(T->ptr[0]->type_id);
+			T0 = T;
+			while (T0->ptr[0]->kind != ID)
+				T0 = T0->ptr[0];
+			rtn = searchSymbolTable(T0->ptr[0]->type_id);
 			//if (T->ptr[0]->kind != ID || T->ptr[0]->kind!=StructVal) {
 			//	//TODO
 			//	semantic_error(T->pos, T->type_id, "对非数组变量采用下标变量的形式访问");
@@ -323,12 +326,14 @@ void Exp(struct ASTNode *T)
 					break;
 				}
 				int dimension = 1;
-				T0 = T->ptr[1];
+				T0 = T->ptr[0];
 				if (T0 && T0->kind == ArrayUse) {
 					++dimension;
 				}
-				if(symbolTable.symbols[rtn].insVector->dimension != dimension)
+				if (symbolTable.symbols[rtn].insVector->dimension != dimension) {
 					semantic_error(T->pos, "", "数组维数不匹配");
+					//printf("%d %d", symbolTable.symbols[rtn].insVector->dimension, dimension);
+				}
 			}
 			break;
 		case ASSIGNOP:
@@ -385,20 +390,23 @@ void Exp(struct ASTNode *T)
 				semantic_error(T->pos, T->type_id, "不能对非左值表达式进行自增、自减运算");
 				break;
 			}
-			rtn = searchSymbolTable(T->ptr[0]->type_id);
-			printf("%s %d\n", T->ptr[0]->type_id, rtn);
+			T0 = T;
+			while (T0->ptr[0]->kind == ArrayUse)
+				T0 = T0->ptr[0];
+			rtn = searchSymbolTable(T0->ptr[0]->type_id);
+			//printf("%s %d\n", T0->ptr[0]->type_id, rtn);
 
 			if (rtn == -1) {
-				semantic_error(T->pos, T->type_id, "变量未定义");
+				semantic_error(T->pos, T0->type_id, "变量未定义");
 				break;
 			}
 			if (symbolTable.symbols[rtn].flag != 'V' && symbolTable.symbols[rtn].flag != 'A') {
-				printf("%c\n", symbolTable.symbols[rtn].flag);
-				semantic_error(T->pos, T->type_id, "只能对变量进行自增、自减运算");
+				//printf("%c\n", symbolTable.symbols[rtn].flag);
+				semantic_error(T->pos, T0->type_id, "只能对变量进行自增、自减运算");
 				break;
 			}
 			if (symbolTable.symbols[rtn].type != INT && symbolTable.symbols[rtn].type != CHAR) {
-				semantic_error(T->pos, T->type_id, "只能对整数进行自增");
+				semantic_error(T->pos, T0->type_id, "只能对整数进行自增");
 				break;
 			}
 			T->type = INT;

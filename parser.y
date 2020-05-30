@@ -212,7 +212,7 @@ Exp:    Exp ASSIGNOP Exp {$$=mknode(2,ASSIGNOP,yylineno,$1,$3);strcpy($$->type_i
       | Exp SelfPlus    {$$=mknode(1,SelfPlusR,yylineno,$1);}
       | SelfDec Exp      {$$=mknode(1,SelfDecL,yylineno,$2);}
       | Exp SelfDec      {$$=mknode(1,SelfDecR,yylineno,$1);}
-      | ID LB Exp RB {$$=mknode(2,ArrayUse,yylineno,$1,$3);}   
+      | Exp LB Exp RB {$$=mknode(2,ArrayUse,yylineno,$1,$3);}   
       | Exp DOT ID {$$=mknode(1,StructVal,yylineno,$1);strcpy($$->type_id,$3);}   
       ;
 ConstExp:  INT           {$$=mknode(0,INT,yylineno);$$->type_int=$1;$$->type=INT;}
