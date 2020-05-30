@@ -38,7 +38,7 @@ void display(struct ASTNode *,int);
 %token PLUS MINUS STAR DIV ASSIGNOP AND OR NOT IF ELSE WHILE FOR RETURN SWITCH CASE COLON DEFAULT
 %token LB RB DOT ADDR DECASS PLUSASS STARASS DIVASS
 %token ArrayDef ArrayUse SelfPlus SelfDec SelfPlusL SelfPlusR SelfDecL SelfDecR
-%token StructDec StructDef StructVal
+%token StructDec StructDef StructVal VOID
 
 /*以下为接在上述token后依次编码的枚举常量，作为AST结点类型标记*/
 %token EXT_DEF_LIST EXT_VAR_DEF FUNC_DEF FUNC_DEC EXT_DEC_LIST PARAM_LIST PARAM_DEC VAR_DEF DEC_LIST DEF_LIST COMP_STM STM_LIST EXP_STMT IF_THEN IF_THEN_ELSE
@@ -69,6 +69,7 @@ ExtDefList: {$$=NULL;}
           ;  
 ExtDef:   Specifier ExtDecList SEMI   {$$=mknode(2,EXT_VAR_DEF,yylineno,$1,$2);}   //该结点对应一个外部变量声明
          |Specifier FuncDec CompSt    {$$=mknode(3,FUNC_DEF,yylineno,$1,$2,$3);}         //该结点对应一个函数定义
+         |VOID FuncDec CompSt    {$$=mknode(2,FUNC_DEF,yylineno,$2,$3);}  
          |StructSpecifier SEMI
          | error SEMI   {$$=NULL;}
          ;

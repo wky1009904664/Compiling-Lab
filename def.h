@@ -8,6 +8,8 @@
 #include "parser.tab.h"
 #include <vector>
 #include<iostream>
+#include<string>
+using std::string;
 #define MAXLENGTH   200
 #define DX 3*sizeof(int)          /*活动记录控制信息需要的单元数，这个根据实际系统调整*/
 //以下语法树结点类型、三地址结点类型等定义仅供参考，实验时一定要根据自己的理解来定义
@@ -78,6 +80,7 @@ struct symbol {       //这里只列出了一个符号表项的部分属性，�
 	char offset;      //外部变量和局部变量在其静态数据区或活动记录中的偏移量，
 //或记录函数活动记录大小，目标代码生成时使用
 	indsiderVector* insVector;
+	string structName;
     //函数入口等实验可能会用到的属性...
     };
 
