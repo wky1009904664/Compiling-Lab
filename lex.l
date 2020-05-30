@@ -55,7 +55,6 @@ str \"[^\t\n\t]*\"
 
 {str}		 {strcpy(yylval.type_id,  yytext);return STRING;}
 
-{id}        {strcpy(yylval.type_id,  yytext); return ID;/*由于关键字的形式也符合标识符的规则，所以把关键字的处理全部放在标识符的前面，优先识别*/}
 ";"			{return SEMI;}
 ","			{return COMMA;}
 "."			{return DOT;}
@@ -74,25 +73,18 @@ str \"[^\t\n\t]*\"
 "&&"        {return AND;}
 "||"        {return OR;}
 "!"			{return NOT;}
-{selfpulsL}	{
-			 strcpy(yylval.type_id,  yytext+2);
-			 return SelfPlusL;}
-{selfpulsR} {
-			 strncpy(yylval.type_id,  yytext, strlen(yytext)-2);
-			 return SelfPlusR;}
-{selfdecL}  {
-			 strcpy(yylval.type_id,  yytext+2);
-		 	 return SelfDecL;}
-{selfdecR}  {
-			 strncpy(yylval.type_id,  yytext, strlen(yytext)-2);
-			 return SelfDecR;
-			 }
+"++"		{return SelfPlus;}
+"--"		{return SelfDec;}
+
 "("			{return LP;}
 ")"			{return RP;}
 "{"			{return LC;}
 "}"			{return RC;}
 "["			{return LB;}
 "]"			{return RB;}
+
+{id}        {strcpy(yylval.type_id,  yytext); return ID;/*由于关键字的形式也符合标识符的规则，所以把关键字的处理全部放在标识符的前面，优先识别*/}
+
 
 [\n]        {yycolumn=1;}   
 [ \r\t]     {;}   

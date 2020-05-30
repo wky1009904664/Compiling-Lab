@@ -31,13 +31,13 @@ void display(struct ASTNode *,int);
 %token <type_id> ID  RELOP  TYPE STRING  /*指定ID,RELOP 的语义值是type_id，有词法分析得到的标识符字符串*/
 %token <type_float> FLOAT          /*指定ID的语义值是type_id，有词法分析得到的标识符字符串*/
 %token <type_char> CHAR
-%token <type_id> SelfPlusL SelfPlusR SelfDecL SelfDecR
+//%token <type_id> SelfPlusL SelfPlusR SelfDecL SelfDecR
 
 %token BREAK CONTINUE STRUCT
 %token DPLUS LP RP LC RC SEMI COMMA      /*用bison对该文件编译时，带参数-d，生成的.tab.h中给这些单词进行编码，可在lex.l中包含parser.tab.h使用这些单词种类码*/
 %token PLUS MINUS STAR DIV ASSIGNOP AND OR NOT IF ELSE WHILE FOR RETURN SWITCH CASE COLON DEFAULT
 %token LB RB DOT ADDR DECASS PLUSASS STARASS DIVASS
-%token ArrayDef ArrayUse
+%token ArrayDef ArrayUse SelfPlus SelfDec SelfPlusL SelfPlusR SelfDecL SelfDecR
 %token StructDec StructDef StructVal
 
 /*以下为接在上述token后依次编码的枚举常量，作为AST结点类型标记*/
@@ -51,7 +51,7 @@ void display(struct ASTNode *,int);
 %left RELOP
 %left PLUS MINUS
 %left STAR DIV
-%right UMINUS NOT DPLUS
+%right UMINUS NOT DPLUS SelfDec SelfPlus
 %left LB RB
 %left DOT
 
@@ -93,7 +93,7 @@ ExtDecList:  VarDec      {$$=$1;}       /*每一个EXT_DECLIST的结点，其第
            | VarDec COMMA ExtDecList {$$=mknode(2,EXT_DEC_LIST,yylineno,$1,$3);}
            ;  
 VarDec:  ID          {$$=mknode(0,ID,yylineno);strcpy($$->type_id,$1);}   //ID结点，标识符符号串存放结点的type_id
-        | VarDec LB INT RB {$$=mknode(1,ArrayDef,yylineno,$1);$$->arrlen=$3;strcpy($$->type_id,"ArrayDef");} 
+        | VarDec LB Exp RB {$$=mknode(2,ArrayDef,yylineno,$1,$3);} 
         | STAR ID {$$=mknode(0,Pointer,yylineno);strcpy($$->type_id,$2);}  
          ;
 FuncDec: ID LP VarList RP   {$$=mknode(1,FUNC_DEC,yylineno,$3);strcpy($$->type_id,$1);}//函数名存放在$$->type_id
@@ -208,11 +208,11 @@ Exp:    Exp ASSIGNOP Exp {$$=mknode(2,ASSIGNOP,yylineno,$1,$3);strcpy($$->type_i
       | FLOAT         {$$=mknode(0,FLOAT,yylineno);$$->type_float=$1;$$->type=FLOAT;}
       | CHAR          {$$=mknode(0,CHAR,yylineno);$$->type_char=$1;$$->type=CHAR;}
       | STRING        {$$=mknode(0,STRING,yylineno);strcpy($$->type_id,$1);$$->type=STRING;}
-      | SelfPlusL     {$$=mknode(0,SelfPlusL,yylineno);strcpy($$->type_id,$1);}
-      | SelfPlusR     {$$=mknode(0,SelfPlusR,yylineno);strcpy($$->type_id,$1);}
-      | SelfDecL      {$$=mknode(0,SelfDecL,yylineno);strcpy($$->type_id,$1);}
-      | SelfDecR      {$$=mknode(0,SelfDecR,yylineno);strcpy($$->type_id,$1);}
-      | Exp LB Exp RB {$$=mknode(2,ArrayUse,yylineno,$1,$3);}   
+      | SelfPlus Exp     {$$=mknode(1,SelfPlusL,yylineno,$2);}
+      | Exp SelfPlus    {$$=mknode(1,SelfPlusR,yylineno,$1);}
+      | SelfDec Exp      {$$=mknode(1,SelfDecL,yylineno,$2);}
+      | Exp SelfDec      {$$=mknode(1,SelfDecR,yylineno,$1);}
+      | ID LB Exp RB {$$=mknode(2,ArrayUse,yylineno,$1,$3);}   
       | Exp DOT ID {$$=mknode(1,StructVal,yylineno,$1);strcpy($$->type_id,$3);}   
       ;
 ConstExp:  INT           {$$=mknode(0,INT,yylineno);$$->type_int=$1;$$->type=INT;}

@@ -6,6 +6,8 @@
 #include "string.h"
 #include "stdarg.h"
 #include "parser.tab.h"
+#include <vector>
+#include<iostream>
 #define MAXLENGTH   200
 #define DX 3*sizeof(int)          /*活动记录控制信息需要的单元数，这个根据实际系统调整*/
 //以下语法树结点类型、三地址结点类型等定义仅供参考，实验时一定要根据自己的理解来定义
@@ -52,6 +54,20 @@ struct ASTNode {
     int arrlen;				
     };
 
+typedef struct low_high {
+	int low;
+	int high;
+	int diff;
+}low_high;
+
+typedef struct InsiderVector {
+	int dimension;
+	int elemType;
+	int firstAddress;
+	int c;
+	std::vector<low_high> vc;
+}indsiderVector;
+
 struct symbol {       //这里只列出了一个符号表项的部分属性，没考虑属性间的互斥
     char name[33];   //变量或函数名
     int level;        //层号
@@ -61,6 +77,7 @@ struct symbol {       //这里只列出了一个符号表项的部分属性，�
     char flag;       //符号标记，函数：'F'  变量：'V'   参数：'P'  临时变量：'T' 数组: 'A' 结构: 'S'
 	char offset;      //外部变量和局部变量在其静态数据区或活动记录中的偏移量，
 //或记录函数活动记录大小，目标代码生成时使用
+	indsiderVector* insVector;
     //函数入口等实验可能会用到的属性...
     };
 

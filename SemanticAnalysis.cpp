@@ -1,6 +1,6 @@
 #include "def.h"
 #define DEBUG 1
-
+#include<vector>
  int LEV;
  struct symboltable symbolTable;
  struct symbol_scope_begin symbol_scope_TX;
@@ -58,8 +58,10 @@ int searchSymbolTable(char *name) {
 			flag = 1;
 		if (flag && symbolTable.symbols[i].level == 1)
 			continue;   //跳过前面函数的形式参数表项
+		//printf("%s   %s\n", symbolTable.symbols[i].name, name);
 		if (!strcmp(symbolTable.symbols[i].name, name))  return i;
 	}
+	
 	return -1;
 }
 
@@ -84,13 +86,14 @@ int fillSymbolTable(const char *name, const  char *alias, int level, int type, c
 
 //填写临时变量到符号表，返回临时变量在符号表中的位置
 int fill_Temp(char *name, int level, int type, char flag, int offset) {
-	strcpy(symbolTable.symbols[symbolTable.index].name, "");
-	strcpy(symbolTable.symbols[symbolTable.index].alias, name);
-	symbolTable.symbols[symbolTable.index].level = level;
-	symbolTable.symbols[symbolTable.index].type = type;
-	symbolTable.symbols[symbolTable.index].flag = flag;
-	symbolTable.symbols[symbolTable.index].offset = offset;
-	return symbolTable.index++; //返回的是临时变量在符号表中的位置序号
+	//strcpy(symbolTable.symbols[symbolTable.index].name, "");
+	//strcpy(symbolTable.symbols[symbolTable.index].alias, name);
+	//symbolTable.symbols[symbolTable.index].level = level;
+	//symbolTable.symbols[symbolTable.index].type = type;
+	//symbolTable.symbols[symbolTable.index].flag = flag;
+	//symbolTable.symbols[symbolTable.index].offset = offset;
+	//return symbolTable.index++; //返回的是临时变量在符号表中的位置序号
+	return 0;
 }
 
 void ext_var_list(struct ASTNode *T) {  //处理变量列表
@@ -114,7 +117,42 @@ void ext_var_list(struct ASTNode *T) {  //处理变量列表
 		T->num = 1;
 		break;
 	case ArrayDef:
-		semantic_error(T->pos, T->type_id, "PASS");
+		ASTNode* T0 = T;
+		indsiderVector* insVector = new InsiderVector;
+		insVector->elemType = T->type;
+		insVector->firstAddress = T->offset;
+		int dimension = 0;
+		while (T0){
+			++dimension;
+			Exp(T0->ptr[1]);
+			/*printf("%d\n", T0->ptr[0]->kind);
+			printf("%d\n", T0->ptr[1]->kind);*/
+			if (T0->ptr[1]->type != INT) {
+				semantic_error(T->pos, "", "数组变量的下标不是整型表达式！");
+				break;
+			}
+			low_high tmplh;
+			tmplh.low = 0;
+			tmplh.high = T0->ptr[1]->type_int - 1;
+			tmplh.diff = tmplh.high - tmplh.low + 1;
+			insVector->vc.insert(insVector->vc.begin(), tmplh);
+			printf("%d\n", T0->ptr[0]->kind);
+			if (T0->ptr[0]->kind == ID) {
+				printf("%s\n", T->ptr[0]->type_id);
+				rtn = fillSymbolTable(T->ptr[0]->type_id, newAlias(), LEV, T->type, 'A', T->offset);  //最后一个变量名
+				strcpy(T->type_id, T->ptr[0]->type_id);
+				if(rtn == -1)
+					semantic_error(T0->ptr[0]->pos, T0->ptr[0]->type_id, "变量重复定义");
+				else {
+					T->place = rtn;
+					insVector->dimension = dimension;
+					symbolTable.symbols[symbolTable.index-1].insVector = insVector;
+				}
+				break;
+			}
+			T0 = T0->ptr[0];
+		}
+		//symbolTable.symbols[symbolTable.index].insVector->dimension = dimension;
 		break;
 	}
 }
@@ -264,6 +302,35 @@ void Exp(struct ASTNode *T)
 			//T->code = genIR(ASSIGNOP, opn1, opn2, result);
 			T->width = 1;
 			break;
+		case ArrayUse:
+			//Exp(T->ptr[0]);
+			//printf("%s\n", T->ptr[0]->type_id);
+			rtn = searchSymbolTable(T->ptr[0]->type_id);
+			//if (T->ptr[0]->kind != ID || T->ptr[0]->kind!=StructVal) {
+			//	//TODO
+			//	semantic_error(T->pos, T->type_id, "对非数组变量采用下标变量的形式访问");
+			//}
+			if (rtn == -1)
+				semantic_error(T->pos, T->ptr[0]->type_id, "变量未定义");
+			else if (symbolTable.symbols[rtn].flag != 'A') {
+				//printf("%s  %c %d", T->ptr[0]->type_id, symbolTable.symbols[rtn].flag, rtn);
+				semantic_error(T->pos, T->ptr[0]->type_id, "对非数组变量采用下标变量的形式访问");
+			}
+			else {
+				Exp(T->ptr[1]);
+				if (T->ptr[1]->type != INT) {
+					semantic_error(T->pos, "", "数组变量的下标不是整型表达式");
+					break;
+				}
+				int dimension = 1;
+				T0 = T->ptr[1];
+				if (T0 && T0->kind == ArrayUse) {
+					++dimension;
+				}
+				if(symbolTable.symbols[rtn].insVector->dimension != dimension)
+					semantic_error(T->pos, "", "数组维数不匹配");
+			}
+			break;
 		case ASSIGNOP:
 			if (T->ptr[0]->kind != ID && T->ptr[0]->kind != ArrayUse && T->ptr[0]->kind != StructVal) {
 				semantic_error(T->pos, "", "赋值语句需要左值");
@@ -309,7 +376,33 @@ void Exp(struct ASTNode *T)
 			}
 			break;
 		case SelfPlusL:
+		case SelfPlusR:
+		case SelfDecL:
+		case SelfDecR:
+			//TODO
+			//Exp(T->ptr[0]);
+			if (T->ptr[0]->kind == INT || T->ptr[0]->kind == FLOAT || T->ptr[0]->kind == CHAR) {
+				semantic_error(T->pos, T->type_id, "不能对非左值表达式进行自增、自减运算");
+				break;
+			}
+			rtn = searchSymbolTable(T->ptr[0]->type_id);
+			printf("%s %d\n", T->ptr[0]->type_id, rtn);
 
+			if (rtn == -1) {
+				semantic_error(T->pos, T->type_id, "变量未定义");
+				break;
+			}
+			if (symbolTable.symbols[rtn].flag != 'V' && symbolTable.symbols[rtn].flag != 'A') {
+				printf("%c\n", symbolTable.symbols[rtn].flag);
+				semantic_error(T->pos, T->type_id, "只能对变量进行自增、自减运算");
+				break;
+			}
+			if (symbolTable.symbols[rtn].type != INT && symbolTable.symbols[rtn].type != CHAR) {
+				semantic_error(T->pos, T->type_id, "只能对整数进行自增");
+				break;
+			}
+			T->type = INT;
+			break;
 		case PLUS:
 		case MINUS:
 		case STAR:
@@ -507,7 +600,7 @@ void semantic_Analysis(struct ASTNode *T)
 			}
 #if (DEBUG)
 			prn_symbol();       //c在退出一个符合语句前显示的符号表
-			system("pause");
+			//system("pause");
 #endif
 			LEV--;    //出复合语句，层号减1
 			symbolTable.index = symbol_scope_TX.TX[--symbol_scope_TX.top]; //删除该作用域中的符号
@@ -565,7 +658,8 @@ void semantic_Analysis(struct ASTNode *T)
 					T->width += width + T0->ptr[0]->ptr[1]->width;
 				}				//这里处理数组
 				else if (T0->ptr[0]->kind == ArrayDef) {
-
+					ext_var_list(T0->ptr[0]);
+					//TODO
 				}
 
 				T0 = T0->ptr[1];
@@ -674,7 +768,6 @@ void semantic_Analysis(struct ASTNode *T)
 			/*需要判断返回值类型是否匹配*/
 			if (T->ptr[0]->type != T->fun_type) {
 				semantic_error(T->pos, "", "返回值类型不匹配");
-				printf("%d %d \n", T->ptr[0]->type, T->fun_type);
 			}
 			T->width = T->ptr[0]->width;
 			result.kind = ID; strcpy(result.id, symbolTable.symbols[T->ptr[0]->place].alias);
@@ -709,6 +802,10 @@ void semantic_Analysis(struct ASTNode *T)
 		case NOT:
 		case UMINUS:
 		case FUNC_CALL:
+		case SelfPlusL:
+		case SelfPlusR:
+		case SelfDecL:
+		case SelfDecR:
 			Exp(T);          //处理基本表达式
 			break;
 		}
