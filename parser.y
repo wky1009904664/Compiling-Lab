@@ -70,7 +70,7 @@ ExtDefList: {$$=NULL;}
 ExtDef:   Specifier ExtDecList SEMI   {$$=mknode(2,EXT_VAR_DEF,yylineno,$1,$2);}   //该结点对应一个外部变量声明
          |Specifier FuncDec CompSt    {$$=mknode(3,FUNC_DEF,yylineno,$1,$2,$3);}         //该结点对应一个函数定义
          |VOID FuncDec CompSt    {$$=mknode(2,FUNC_DEF,yylineno,$2,$3);}  
-         |StructSpecifier SEMI
+         |StructSpecifier SEMI 
          | error SEMI   {$$=NULL;}
          ;
 StructSpecifier: STRUCT StructName LC SDefList RC {$$=mknode(1,StructDec,yylineno,$4);strcpy($$->type_id,$2->type_id);}
@@ -121,7 +121,7 @@ LoopIF:IF LP Exp RP LoopStmt %prec LOWER_THEN_ELSE   {$$=mknode(2,IF_THEN,yyline
 StmtBase:   Exp SEMI    {$$=mknode(1,EXP_STMT,yylineno,$1);}
       | RETURN Exp SEMI   {$$=mknode(1,RETURN,yylineno,$2);}
       | WHILE LP Exp RP LoopStmt {$$=mknode(2,WHILE,yylineno,$3,$5);}
-      | FOR LP EmpArgs SEMI EmpArgs SEMI EmpArgs RP LoopStmt {$$=mknode(4,FOR,yylineno,$3,$5,$7,$9);}
+      | FOR LP Exp SEMI Exp SEMI Exp RP LoopStmt {$$=mknode(4,FOR,yylineno,$3,$5,$7,$9);}
       | FOR LP Def Exp SEMI Exp RP Stmt{$$=mknode(4,FOR,yylineno,$3,$4,$6,$8);} 
       | SWITCH LP Exp RP LC CaseList RC {$$=mknode(2,SWITCH,yylineno,$3,$6);}
       ;

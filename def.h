@@ -50,7 +50,7 @@ struct ASTNode {
     int type;                      //用以标识表达式结点的类型
 	int fun_type;
     int pos;                       //语法单位所在位置行号
-    int offset;                     //偏移量
+    int offset;                     //偏移量，函数的offset表示活动记录大小
     int width;                     //占数据字节数
     int num;                      //计数器，可以用来统计形参个数
     int arrlen;				
@@ -77,7 +77,7 @@ struct symbol {       //这里只列出了一个符号表项的部分属性，�
     int  paramnum;  //对函数适用，记录形式参数个数
     char alias[10];   //别名，为解决嵌套层次使用
     char flag;       //符号标记，函数：'F'  变量：'V'   参数：'P'  临时变量：'T' 数组: 'A' 结构: 'S'
-	char offset;      //外部变量和局部变量在其静态数据区或活动记录中的偏移量，
+	int offset;      //外部变量和局部变量在其静态数据区或活动记录中的偏移量，
 //或记录函数活动记录大小，目标代码生成时使用
 	indsiderVector* insVector;
 	string structName;
