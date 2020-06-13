@@ -34,6 +34,14 @@ char *strcat0(const char *s1, const char *s2) {
 	return result;
 }
 
+char* strtochar(string str)
+{
+	int len = str.length();
+	char* data = (char*)malloc((len + 1) * sizeof(char));
+	str.copy(data, len, 0);
+	return data;
+}
+
 char *newAlias() {
 	static int no = 1;
 	char s[10];
@@ -144,7 +152,7 @@ void prnIR(struct codenode *head) {
 		sprintf(resultstr, "%s", h->result.id);
 		switch (h->op) {
 		case ArrayUse:
-			printf("  %s := %s [ %s ] \n", resultstr, opnstr1, opnstr2);
+			printf("  %s := %s [%s] \n", resultstr, opnstr1, opnstr2);
 			break;
 		case PLUSASS:
 		case DECASS:
@@ -528,6 +536,7 @@ void Exp(struct ASTNode *T)
 	int rtn, num, width;
 	struct ASTNode *T0;
 	struct opn opn1, opn2, result;
+	char* indexdata;
 	int dimension = 1;
 	if (T)
 	{
@@ -628,11 +637,31 @@ void Exp(struct ASTNode *T)
 				semantic_error(T->pos, "", "赋值语句需要左值");
 				break;
 			}
-			Exp(T->ptr[0]);   //处理左值，例中仅为变量
+
+			if (T->ptr[0]->kind == ArrayUse) {
+				/*T->ptr[0]->code = NULL;*/
+				string index;
+				T0 = T->ptr[0];
+				while (T0->kind == ArrayUse) {
+					Exp(T0->ptr[1]);
+					T->ptr[0]->code  = merge(2, T->ptr[0]->code, T0->ptr[1]->code);
+					//printf("%s\n", symbolTable.symbols[T0->ptr[1]->place].alias);
+					string tmp = symbolTable.symbols[T0->ptr[1]->place].alias;
+					tmp = "[" + tmp + "]";
+					index = tmp + index;
+					T0 = T0->ptr[0];
+				}
+				if (T0->kind == ID) {
+					Exp(T0);
+					index = symbolTable.symbols[T0->place].alias + index;
+				}
+				indexdata = strtochar(index);
+			}
+			else {
+				Exp(T->ptr[0]);   //处理左值，例中仅为变量
+			}
 			T->ptr[1]->offset = T->offset;
 			Exp(T->ptr[1]);
-			//if ((T->ptr[0]->type == CHAR && T->ptr[1]->type == FLOAT)
-			//	|| (T->ptr[0]->type == FLOAT && T->ptr[1]->type == CHAR))
 			if ((T->ptr[0]->type == CHAR && T->ptr[1]->type == FLOAT)
 				|| (T->ptr[0]->type == FLOAT && T->ptr[1]->type == CHAR)) {
 				semantic_error(T->pos, "", "赋值运算类型不匹配，C只支持一次隐式转换!");
@@ -643,10 +672,14 @@ void Exp(struct ASTNode *T)
 			T->type = T->ptr[0]->type;
 			T->width = T->ptr[1]->width;
 			T->code = merge(2, T->ptr[0]->code, T->ptr[1]->code);
-
+	
 			opn1.kind = ID;   strcpy(opn1.id, symbolTable.symbols[T->ptr[1]->place].alias);//右值一定是个变量或临时变量
 			opn1.offset = symbolTable.symbols[T->ptr[1]->place].offset;
-			result.kind = ID; strcpy(result.id, symbolTable.symbols[T->ptr[0]->place].alias);
+			result.kind = ID; 
+			if (T->ptr[0]->kind == ArrayUse)
+				strcpy(result.id, indexdata);
+			else
+				strcpy(result.id, symbolTable.symbols[T->ptr[0]->place].alias);
 			result.offset = symbolTable.symbols[T->ptr[0]->place].offset;
 			T->code = merge(2, T->code, genIR(T->kind, opn1, opn2, result));
 			break;
@@ -691,7 +724,7 @@ void Exp(struct ASTNode *T)
 					semantic_error(T->pos, T->ptr[0]->type_id, "结构体内无该成员");
 			}
 			else {
-				//Exp(T->ptr[0]);
+				Exp(T->ptr[0]);
 				Exp(T->ptr[1]);
 				//prnIR(T->ptr[1]->code);
 				//printf("%s\n", symbolTable.symbols[T->ptr[1]->place].alias);
@@ -701,15 +734,15 @@ void Exp(struct ASTNode *T)
 				}
 
 				T->place = rtn;
-				//T->place = fill_Temp(newTemp(), LEV, T->type, 'T', T->offset + T->ptr[0]->width + T->ptr[1]->width);
-				//result.kind = ID; strcpy(result.id, symbolTable.symbols[T->place].alias);
-				//result.type = T->type; result.offset = symbolTable.symbols[T->place].offset;
-				//opn1.kind = ID; strcpy(opn1.id, symbolTable.symbols[T->ptr[0]->place].alias);
-				//opn1.type = T->ptr[0]->type; opn1.offset = symbolTable.symbols[T->ptr[0]->place].offset;
-				//opn2.kind = ID; strcpy(opn2.id, symbolTable.symbols[T->ptr[1]->place].alias);
-				//opn2.type = T->ptr[1]->type; opn2.offset = symbolTable.symbols[T->ptr[1]->place].offset;
-				//cout << T->kind << endl;
-				//T->code = merge(2, T->ptr[1]->code, genIR(T->kind, opn1, opn2, result));
+				T->place = fill_Temp(newTemp(), LEV, T->type, 'T', T->offset + T->ptr[0]->width + T->ptr[1]->width);
+				result.kind = ID; strcpy(result.id, symbolTable.symbols[T->place].alias);
+				result.type = T->type; result.offset = symbolTable.symbols[T->place].offset;
+				opn1.kind = ID; strcpy(opn1.id, symbolTable.symbols[T->ptr[0]->place].alias);
+				opn1.type = T->ptr[0]->type; opn1.offset = symbolTable.symbols[T->ptr[0]->place].offset;
+				opn2.kind = ID; strcpy(opn2.id, symbolTable.symbols[T->ptr[1]->place].alias);
+				opn2.type = T->ptr[1]->type; opn2.offset = symbolTable.symbols[T->ptr[1]->place].offset;
+				cout << T->kind << endl;
+				T->code = merge(2, T->ptr[1]->code, genIR(T->kind, opn1, opn2, result));
 
 			}
 			break;

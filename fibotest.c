@@ -13,11 +13,10 @@ int main(){
     int m,i,a;
     int arr[10][30],sarr[10];
     int c;
+    sarr[1] = c + 1 ;
+    arr[1][2] = sarr[3];
     c = sarr[1];
-    sarr[1] = c;
-    arr[1][2];
-    arr[1][2] = 3;
-    arr[1] = 1;
+    
     // a-=i;
     // i+=1;
     // i++;
