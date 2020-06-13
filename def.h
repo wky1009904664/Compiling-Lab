@@ -25,6 +25,7 @@ struct opn{
         };
     int level;                  //变量的层号，0表示是全局变量，数据保存在静态数据区
     int offset;                 //偏移量，目标代码生成时用
+	int inoff;
     };
 
 struct codenode {   //三地址TAC代码结点,采用单链表存放中间语言代码
@@ -53,7 +54,8 @@ struct ASTNode {
     int offset;                     //偏移量，函数的offset表示活动记录大小
     int width;                     //占数据字节数
     int num;                      //计数器，可以用来统计形参个数
-    int arrlen;				
+	int arrlen;
+    int inoff;				
     };
 
 typedef struct low_high {

@@ -122,7 +122,7 @@ StmtBase:   Exp SEMI    {$$=mknode(1,EXP_STMT,yylineno,$1);}
       | RETURN Exp SEMI   {$$=mknode(1,RETURN,yylineno,$2);}
       | WHILE LP Exp RP LoopStmt {$$=mknode(2,WHILE,yylineno,$3,$5);}
       | FOR LP Exp SEMI Exp SEMI Exp RP LoopStmt {$$=mknode(4,FOR,yylineno,$3,$5,$7,$9);}
-      | FOR LP Def Exp SEMI Exp RP Stmt{$$=mknode(4,FOR,yylineno,$3,$4,$6,$8);} 
+      | FOR LP Def Exp SEMI Exp RP LoopStmt{$$=mknode(4,FOR,yylineno,$3,$4,$6,$8);} 
       | SWITCH LP Exp RP LC CaseList RC {$$=mknode(2,SWITCH,yylineno,$3,$6);}
       ;
 Stmt:   StmtBase {$$=$1;}
