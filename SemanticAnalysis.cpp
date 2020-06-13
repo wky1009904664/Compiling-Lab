@@ -1,5 +1,5 @@
 #include "def.h"
-#define DEBUG 1
+#define DEBUG 0
 #include<vector>
 #include<string>
 #include<map>
@@ -169,6 +169,9 @@ void prnIR(struct codenode *head) {
 			printf("  %s := %s \n", resultstr, opnstr1);
 			break;
 		case ASSIGNOP:  printf("  %s := %s\n", resultstr, opnstr1);
+			break;
+		case UMINUS:
+			printf("  %s := -%s\n", resultstr, opnstr1);
 			break;
 		case SelfPlusL:
 		case SelfPlusR:
@@ -676,8 +679,10 @@ void Exp(struct ASTNode *T)
 				semantic_error(T->pos, "", "赋值运算类型不匹配，C只支持一次隐式转换!");
 				break;
 			}
-			if (symbolTable.symbols[T->ptr[0]->place].flag == 'S' && symbolTable.symbols[T->ptr[1]->place].flag == 'S') {
+			if (symbolTable.symbols[T->ptr[0]->place].flag == 'S' && symbolTable.symbols[T->ptr[1]->place].flag == 'S'
+				&& T->ptr[0]->kind == ID && T->ptr[1]->kind == ID) {
 				//结构间赋值
+				mark(0);
 				string stuName = symbolTable.symbols[T->ptr[0]->place].structName;
 				if (stuName != symbolTable.symbols[T->ptr[0]->place].structName) {
 					semantic_error(T->pos, "", "结构类型不符!");
@@ -734,12 +739,8 @@ void Exp(struct ASTNode *T)
 				++dimension;
 				T0 = T0->ptr[0];
 			}
-			/*	T0 = T->ptr[0];
-				while (T0 && T0->kind == ArrayUse) {
-					++dimension;
-					T0 = T0->ptr[0];
-				}*/
 			rtn = searchSymbolTable(T0->ptr[0]->type_id);
+			
 			//if (T->ptr[0]->kind != ID || T->ptr[0]->kind!=StructVal) {
 			//	//TODO
 			//	semantic_error(T->pos, T->type_id, "对非数组变量采用下标变量的形式访问");
@@ -747,11 +748,9 @@ void Exp(struct ASTNode *T)
 			if (rtn == -1)
 				semantic_error(T->pos, T->ptr[0]->type_id, "变量未定义");
 			else if (symbolTable.symbols[rtn].flag != 'A' && symbolTable.symbols[rtn].flag != 'S') {
-				//printf("%s  %c %d", T->ptr[0]->type_id, symbolTable.symbols[rtn].flag, rtn);
 				semantic_error(T->pos, T->ptr[0]->type_id, "对非数组变量采用下标变量的形式访问");
 			}
 			else if (symbolTable.symbols[rtn].insVector->dimension != dimension) {
-				//printf("%d %d\n", symbolTable.symbols[rtn].insVector->dimension, dimension);
 				semantic_error(T->pos, "", "数组维数不匹配");
 			}
 			else if (symbolTable.symbols[rtn].flag == 'S') {
@@ -767,25 +766,53 @@ void Exp(struct ASTNode *T)
 					semantic_error(T->pos, T->ptr[0]->type_id, "结构体内无该成员");
 			}
 			else {
-				Exp(T->ptr[0]);
+				auto ins = symbolTable.symbols[rtn].insVector->vc;
+				int i = symbolTable.symbols[rtn].insVector->dimension - 1;
+				T->code = NULL; int mul = 1;
+				int startmp,addtmp;
 				Exp(T->ptr[1]);
-				//prnIR(T->ptr[1]->code);
-				//printf("%s\n", symbolTable.symbols[T->ptr[1]->place].alias);
-				if (T->ptr[1]->type != INT) {
-					semantic_error(T->pos, "", "数组变量的下标不是整型表达式");
-					break;
+				T->code = merge(2, T->code, T->ptr[1]->code);
+				int indexPlace = T->ptr[1]->place;
+				T0 = T->ptr[0];
+				while (T0->kind == ArrayUse) {
+					mark(0);
+					Exp(T0->ptr[1]);
+					T->code = merge(2,T->code, T0->ptr[1]->code);
+					if (T0->ptr[1]->type != INT) {
+						semantic_error(T->pos, "", "数组变量的下标不是整型表达式");
+						break;
+					}
+					startmp = fill_Temp(newTemp(), LEV, T->type, 'T', T0->offset + T0->ptr[0]->width + T0->ptr[1]->width);
+					result.kind = ID; strcpy(result.id, symbolTable.symbols[startmp].alias);
+					result.type = T->type; result.offset = symbolTable.symbols[startmp].offset;
+					mul *= ins[i--].diff;
+					opn1.kind = INT;  opn1.const_int = mul;
+					opn2.kind = ID; strcpy(opn2.id, symbolTable.symbols[T0->ptr[1]->place].alias);
+					opn2.type = T0->ptr[1]->type; opn2.offset = symbolTable.symbols[T0->ptr[1]->place].offset;
+					merge(2, T->code, genIR(STAR, opn1, opn2, result));
+
+					addtmp = fill_Temp(newTemp(), LEV, T->type, 'T', T0->offset + T0->ptr[0]->width + T0->ptr[1]->width);
+					strcpy(result.id, symbolTable.symbols[addtmp].alias);
+					result.offset = symbolTable.symbols[addtmp].offset;
+					opn1.kind = ID; strcpy(opn1.id, symbolTable.symbols[startmp].alias);
+					strcpy(opn2.id, symbolTable.symbols[indexPlace].alias);
+					merge(2, T->code, genIR(PLUS, opn1, opn2, result));
+
+					indexPlace = addtmp;
+					//cout << symbolTable.symbols[T0->ptr[1]->place].alias << endl;
+					T0 = T0->ptr[0];
 				}
 
 				T->place = rtn;
 				T->place = fill_Temp(newTemp(), LEV, T->type, 'T', T->offset + T->ptr[0]->width + T->ptr[1]->width);
 				result.kind = ID; strcpy(result.id, symbolTable.symbols[T->place].alias);
 				result.type = T->type; result.offset = symbolTable.symbols[T->place].offset;
-				opn1.kind = ID; strcpy(opn1.id, symbolTable.symbols[T->ptr[0]->place].alias);
-				opn1.type = T->ptr[0]->type; opn1.offset = symbolTable.symbols[T->ptr[0]->place].offset;
-				opn2.kind = ID; strcpy(opn2.id, symbolTable.symbols[T->ptr[1]->place].alias);
-				opn2.type = T->ptr[1]->type; opn2.offset = symbolTable.symbols[T->ptr[1]->place].offset;
+				opn1.kind = ID; strcpy(opn1.id, symbolTable.symbols[rtn].alias);
+				opn1.type = T->ptr[0]->type; opn1.offset = symbolTable.symbols[rtn].offset;
+				opn2.kind = ID; strcpy(opn2.id, symbolTable.symbols[indexPlace].alias);
+				opn2.type = T->ptr[1]->type; opn2.offset = symbolTable.symbols[indexPlace].offset;
 				//cout << T->kind << endl;
-				T->code = merge(2, T->ptr[1]->code, genIR(T->kind, opn1, opn2, result));
+				T->code = merge(2, T->code, genIR(T->kind, opn1, opn2, result));
 
 			}
 			break;
@@ -967,6 +994,14 @@ void Exp(struct ASTNode *T)
 				T->code = merge(2, T->code, T->ptr[1]->code);
 			}
 			//prnIR(T->code);
+			break;
+		case UMINUS:
+			Exp(T->ptr[0]);
+			T->place = fill_Temp(newTemp(), LEV, T->type, 'T', T->offset + T->width - width);
+			opn1.kind = ID; strcpy(opn1.id, symbolTable.symbols[T->ptr[0]->place].alias);//右值一定是个变量或临时变量
+			opn1.offset = symbolTable.symbols[T->ptr[0]->place].offset;
+			result.kind = ID; strcpy(result.id,symbolTable.symbols[T->place].alias);
+			T->code = merge(2, T->ptr[0]->code, genIR(UMINUS, opn1, opn2, result));
 			break;
 		}
 	}
@@ -1393,7 +1428,7 @@ void semantic_Analysis0(struct ASTNode *T) {
 	symbol_scope_TX.top = 1;
 	T->offset = 0;              //外部变量在数据区的偏移量
 	semantic_Analysis(T);
-	printStructTable();
+	//printStructTable();
 	prnIR(T->code);
 	//objectCode(T->code);
 }

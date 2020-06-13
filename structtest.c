@@ -8,6 +8,6 @@ int main()
     int a;
     struct A m,n;
     m=n;
-    m.a=a;
+    m.a=n.b;
     return 1;
 }

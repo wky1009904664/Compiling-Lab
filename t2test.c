@@ -5,7 +5,7 @@ struct A{
 float f4(float x) 
 {
     struct A m;
-   int a;
+    int a;
     m=12;
     m++;
     m.b=17;
