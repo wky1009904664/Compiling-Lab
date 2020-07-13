@@ -3,20 +3,24 @@
 #include<vector>
 #include<string>
 #include<map>
+#include<set>
 using std::vector;
 using std::string;
 using std::map;
 using std::cout;
 using std::endl;
+using std::set;
 
  int LEV;
  struct symboltable symbolTable;
  struct symbol_scope_begin symbol_scope_TX;
  int loopFlag = 0;
  int forFlag = 0;
+ int switchFlag = 0;
  int structDecFlag = 0;
  int needReturnFlag = 0;
  int hasReturnFlag = 0;
+ int Allcount = 0;
  struct codenode  *breakLabel, *continueLabel;
  string structDecName;
 
@@ -27,6 +31,11 @@ using std::endl;
 	 InsiderVector* insVector;
 };
  map<string, vector<structMember>> structTable;
+
+ set<string> outlabels;
+ set<int> iflabels;
+ //vector<vector<codenode> > baseBlocks;
+ vector<codenode*> baseBlocks;
 char *strcat0(const char *s1, const char *s2) {
 	static char result[10];
 	strcpy(result, s1);
@@ -61,6 +70,49 @@ char *newTemp() {
 	char s[10];
 	itoa(no++, s, 10);
 	return strcat0("temp", s);
+}
+
+void mark(int i)
+{
+	for (int s = 0; s < 5; s++)
+		printf("%c", i + '0');
+	printf("\n");
+}
+
+int countNumbers( )
+{
+	int count = 0;
+	for (auto head : baseBlocks)
+	{
+		codenode* h = head;
+		do {
+			++count;
+			h = h->next;
+		} while (h != head);
+	}
+	return count;
+}
+
+const char* getTypeString(int type)
+{
+	if (type == INT)
+		return "int";
+	if (type == FLOAT)
+		return "float";
+	if (type == CHAR)
+		return "char";
+	if (type == STRUCT)
+		return  "struct";
+}
+
+int getTypeINT(const char* str)
+{
+	if (!strcmp(str, "int"))
+		return INT;
+	if (!strcmp(str, "float"))
+		return FLOAT;
+	if (!strcmp(str, "char"))
+		return CHAR;
 }
 
 //生成一条TAC代码的结点组成的双向循环链表，返回头指针
@@ -132,11 +184,26 @@ char getop(int op)
 		return '+';
 }
 
+int cal(int x, int y, int op)
+{
+	//cout << x << ' ' << y << op << endl;
+	if (op == PLUS)
+		return x + y;
+	if (op == MINUS)
+		return x - y;
+	if (op == STAR)
+		return x * y;
+	if (op == DIV)
+		return x / y;
+	return 0;
+}
+
 //输出中间代码
 void prnIR(struct codenode *head) {
 	char opnstr1[32], opnstr2[32], resultstr[32];
 	struct codenode *h = head;
 	do {
+		printf("(%d) : ", ++Allcount);
 		if (h->opn1.kind == INT)
 			sprintf(opnstr1, "#%d", h->opn1.const_int);
 		if (h->opn1.kind == FLOAT)
@@ -153,8 +220,14 @@ void prnIR(struct codenode *head) {
 			sprintf(opnstr1, "%s[%d]", h->opn1.id,h->opn1.inoff);
 		if (h->opn2.kind == StructVal)
 			sprintf(opnstr2, "%s[%d]", h->opn2.id, h->opn2.inoff);
-		if (h->result.kind == StructVal && h->op == ASSIGNOP)
+		if (h->result.kind == StructVal && h->op == ASSIGNOP) {
 			sprintf(resultstr, "%s[%d]", h->result.id, h->result.inoff);
+			//cout << resultstr << endl;
+		}
+		else if(h->result.kind == INT)
+			sprintf(resultstr, "#%d", h->result.const_int);
+		else if (h->result.kind == ArrayUse && h->op == ASSIGNOP)
+			sprintf(resultstr, "%s[%s]", h->result.id, h->opn2.id);
 		else
 			sprintf(resultstr, "%s", h->result.id);
 		switch (h->op) {
@@ -166,9 +239,13 @@ void prnIR(struct codenode *head) {
 		case STARASS:
 		case DIVASS:
 			printf("  %s := %s %c %s \n", opnstr2, resultstr ,getop(h->op), opnstr1);
+			printf("(%d) : ", ++Allcount);
 			printf("  %s := %s \n", resultstr, opnstr1);
 			break;
-		case ASSIGNOP:  printf("  %s := %s\n", resultstr, opnstr1);
+		case ASSIGNOP:  
+			printf("  %s := %s\n", resultstr, opnstr1);
+			/*if (h->result.kind == StructVal && h->op == ASSIGNOP)
+			cout << h->result.id << "    " << h->result.inoff << endl;*/
 			break;
 		case UMINUS:
 			printf("  %s := -%s\n", resultstr, opnstr1);
@@ -177,23 +254,36 @@ void prnIR(struct codenode *head) {
 		case SelfPlusR:
 		case SelfDecL:
 		case SelfDecR:
-			printf("  %s := #1 \n", opnstr1);
-			printf("  %s := %s %c %s \n", opnstr2, resultstr, getop(h->op), opnstr1);
-			printf("  %s := %s \n", resultstr, opnstr2);
+			/*printf("  %s := #1 \n", opnstr1);
+			printf("  %s := %s %c %s \n", opnstr2, resultstr, getop(h->op), opnstr1);*/
+			printf("  %s := %s + # 1\n", resultstr, resultstr);
 			break;
 		case PLUS:
 		case MINUS:
 		case STAR:
-		case DIV: printf("  %s := %s %c %s\n", resultstr, opnstr1, \
-			h->op == PLUS ? '+' : h->op == MINUS ? '-' : h->op == STAR ? '*' : '\\', opnstr2);
+		case DIV: 
+			//if (h->opn1.kind == INT && h->opn2.kind == INT) {
+			//	h->opn1.const_int = cal(h->opn1.const_int, h->opn2.const_int, h->op);
+			//	h->op = ASSIGNOP;
+			//	h->opn1.kind = INT;
+			//	//cout << h->op << endl;
+			//	printf("  %s := %d\n", resultstr, h->opn1.const_int);
+			//}
+			//else
+			printf("  %s := %s %c %s\n", resultstr, opnstr1, 
+				h->op == PLUS ? '+' : h->op == MINUS ? '-' : h->op == STAR ? '*' : '\\', opnstr2);
 			break;
-		case FUNCTION: printf("\nFUNCTION %s :\n", h->result.id);
+		case FUNCTION: printf("FUNCTION %s :\n", h->result.id);
 			break;
 		case PARAM:    printf("  PARAM %s\n", h->result.id);
 			break;
-		case LABEL:    printf("LABEL %s :\n", h->result.id);
+		case LABEL:    
+			//cout << h->result.id << endl;
+			printf("LABEL %s :\n", h->result.id);
 			break;
-		case GOTO:     printf("  GOTO %s\n", h->result.id);
+		case GOTO:     
+			//cout << h->result.id << endl;
+			printf("  GOTO %s\n", h->result.id);
 			break;
 		case JLE:      printf("  IF %s <= %s GOTO %s\n", opnstr1, opnstr2, resultstr);
 			break;
@@ -223,30 +313,143 @@ void prnIR(struct codenode *head) {
 		}
 		h = h->next;
 	} while (h != head);
+	cout << endl;
 }
 
-const char* getTypeString(int type)
+bool isInsta(struct codenode *h,int count)
 {
-	if (type == INT)
-		return "int";
-	if (type == FLOAT)
-		return "float";
-	if (type == CHAR)
-		return "char";
-	if (type == STRUCT)
-		return  "struct";
+	string str = h->result.id;
+	//cout << str << endl;
+	if ((h->op == LABEL && (outlabels.find(str) != outlabels.end()))
+		|| (iflabels.find(count) != iflabels.end()))
+		return true;
+	return false;
 }
 
-int getTypeINT(const char* str)
+void getBaseBlocks(struct codenode *head)
 {
-	if (!strcmp(str, "int"))
-		return INT;
-	if (!strcmp(str, "float"))
-		return FLOAT;
-	if (!strcmp(str, "char"))
-		return CHAR;
+	struct codenode* h = head, *next,*start, *p;
+	int count = 1;
+	iflabels.insert(1);
+	do {
+		if (h->op == GOTO ) {
+			outlabels.insert(h->result.id);
+		}
+		else if (h->op == JLE || h->op == JLT || h->op == JGE
+			|| h->op == JGT || h->op == EQ || h->op == NEQ) {
+			outlabels.insert(h->result.id);
+			iflabels.insert(count + 1);
+		}
+		h = h->next;
+		++count;
+	} while (h != head);
+
+	count = 1;
+	h = head;
+	while (count <= Allcount)
+	{
+		string str = h->result.id;
+		//cout << str << endl;
+		if (isInsta(h,count))
+		{
+			//cout << count << endl;
+			p = h;
+			while (count <= Allcount)
+			{
+				if (isInsta(p->next, count +1) || p->op == GOTO || count == Allcount) {
+					//cout << count << endl;
+					break;
+				}
+					
+				p = p->next;
+				++count;
+			}
+			//cout << endl;
+			++count;
+			start = h;
+			h = p->next;
+			if (p->op == LABEL)
+				p = p->prior;
+			p->next = start;
+			start->prior = p;
+			baseBlocks.push_back(start);
+		}
+		else {
+			++count;
+			h = h->next;
+		}
+		//baseBlocks.push_back(h);
+
+		
+	}
+
 }
 
+void optim( )
+{
+	Allcount = 0;
+	for (auto v : baseBlocks) {
+		struct codenode* h = v;
+		do {
+			if (h->op == ASSIGNOP || h->op == ArrayUse) {
+				switch (h->next->op)
+				{
+				case ASSIGNOP:
+					//cout << h->opn1.kind << "    " << h->result.id << "    " << h->next->opn1.id << endl;
+					if (!strcmp(h->result.id, h->next->opn1.id)) {
+						h->result = h->next->result;
+						h->next = h->next->next;
+						h->next->prior = h;
+					}
+					break;
+				case RETURN:
+					if (!strcmp(h->result.id, h->next->result.id)) {
+						//cout << h->opn1.kind << "    " << h->result.id << "    " << h->next->opn1.id << endl;
+						h->next->result = h->opn1;
+						h->prior->next = h->next;
+						h->next->prior = h->prior;
+						h = h->next;
+					}
+					break;
+				case PLUS:
+				case MINUS:
+				case STAR:
+				case DIV:
+					if (h->opn1.kind == INT ) {
+						if (h->next->opn1.kind == ID && !strcmp(h->result.id, h->next->opn1.id)) {
+							//mark(0);
+							h->next->opn1 = h->opn1;
+							h->prior->next = h->next;
+							h->next->prior = h->prior;
+							h = h->next;
+						}
+						else if (h->next->opn2.kind == ID && !strcmp(h->result.id, h->next->opn2.id)) {
+							h->next->opn2 = h->opn1;
+							h->prior->next = h->next;
+							h->next->prior = h->prior;
+							h = h->next;
+						}
+						
+					}
+					break;
+				default:
+					break;
+				}
+			}
+			else if (h->op == PLUS || h->op == MINUS || h->op == STAR || h->op == DIV) {
+				if (h->opn1.kind == INT && h->opn2.kind == INT) {
+					h->opn1.const_int = cal(h->opn1.const_int, h->opn2.const_int, h->op);
+					h->op = ASSIGNOP;
+					h->opn1.kind = INT;
+					//cout << h->opn1.const_int << "   " << h->result.id << endl;
+				}
+			}
+			h = h->next;
+		} while (h != v);
+		//prnIR(v);
+
+	}
+}
 
 void printStructTable()
 {
@@ -262,13 +465,6 @@ void printStructTable()
 void semantic_error(int line, const char *msg1, const char *msg2) {
 	//这里可以只收集错误信息，最后一次显示
 	printf("在%d行,%s %s\n", line, msg1, msg2);
-}
-
-void mark(int i)
-{
-	for (int s= 0; s < 5; s++)
-		printf("%c", i + '0');
-	printf("\n");
 }
 
 int fillStructTable(char* valName, int type, int width, int pos, InsiderVector* insVector)
@@ -292,7 +488,6 @@ int fillStructTable(char* valName, int type, int width, int pos, InsiderVector* 
 	//printStructTable();
 	return 0;
 }
-
 
 void prn_symbol() { //显示符号表
 	int i = 0;
@@ -413,7 +608,7 @@ void ext_var_list(struct ASTNode *T) {  //处理变量列表
 			T0 = T0->ptr[0];
 		}
 		//symbolTable.symbols[symbolTable.index].insVector->dimension = dimension;
-		T->width = 1;
+		T->width = 4;
 		for (auto v : insVector->vc) {
 			T->width *= v.diff;
 		}
@@ -516,31 +711,6 @@ void boolExp(struct ASTNode *T) {  //布尔表达式，参考文献[2]p84的思�
 		}
 	}
 }
-
-//void handleArrayUse(struct ASTNode *T, int rtn)
-//{
-//	struct ASTNode *T0;
-//	struct opn opn1, opn2, result;
-//	if (T->ptr[0]->kind = ArrayUse)
-//		handleArrayUse(T->ptr[0], rtn);
-//	Exp(T->ptr[1]);
-//	//prnIR(T->ptr[1]->code);
-//	//printf("%s\n", symbolTable.symbols[T->ptr[1]->place].alias);
-//	if (T->ptr[1]->type != INT) {
-//		semantic_error(T->pos, "", "数组变量的下标不是整型表达式");
-//		return;
-//	}
-//
-//	T->place = rtn;
-//	T->place = fill_Temp(newTemp(), LEV, T->type, 'T', T->offset + T->ptr[0]->width + T->ptr[1]->width);
-//	result.kind = ID; strcpy(result.id, symbolTable.symbols[T->place].alias);
-//	result.type = T->type; result.offset = symbolTable.symbols[T->place].offset;
-//	opn1.kind = ID; strcpy(opn1.id, symbolTable.symbols[T->ptr[0]->place].alias);
-//	opn1.type = T->ptr[0]->type; opn1.offset = symbolTable.symbols[T->ptr[0]->place].offset;
-//	opn2.kind = ID; strcpy(opn2.id, symbolTable.symbols[T->ptr[1]->place].alias);
-//	opn2.type = T->ptr[1]->type; opn2.offset = symbolTable.symbols[T->ptr[1]->place].offset;
-//	T->code = merge(2, T->ptr[1]->code, genIR(T->kind, opn1, opn2, result));
-//}
 
 void Exp(struct ASTNode *T)
 {//处理基本表达式，参考文献[2]p82的思想
@@ -651,24 +821,85 @@ void Exp(struct ASTNode *T)
 				break;
 			}
 			if (T->ptr[0]->kind == ArrayUse) {
-				/*T->ptr[0]->code = NULL;*/
-				string index;
+				dimension = 1;
 				T0 = T->ptr[0];
-				while (T0->kind == ArrayUse) {
-					Exp(T0->ptr[1]);
-					T->ptr[0]->code  = merge(2, T->ptr[0]->code, T0->ptr[1]->code);
-					//printf("%s\n", symbolTable.symbols[T0->ptr[1]->place].alias);
-					string tmp = symbolTable.symbols[T0->ptr[1]->place].alias;
-					tmp = "[" + tmp + "]";
-					index = tmp + index;
+				while (T0->ptr[0]->kind != ID) {
+					++dimension;
 					T0 = T0->ptr[0];
 				}
-				if (T0->kind == ID) {
-					Exp(T0);
-					index = symbolTable.symbols[T0->place].alias + index;
+				rtn = searchSymbolTable(T0->ptr[0]->type_id);
+				if (rtn == -1)
+					semantic_error(T->pos, T->ptr[0]->type_id, "变量未定义");
+				else if (symbolTable.symbols[rtn].flag != 'A' && symbolTable.symbols[rtn].flag != 'S') {
+					semantic_error(T->pos, T->ptr[0]->type_id, "对非数组变量采用下标变量的形式访问");
 				}
-				indexdata = strtochar(index);
+				else if (symbolTable.symbols[rtn].insVector->dimension != dimension) {
+					printf("%d %d\n", symbolTable.symbols[rtn].insVector->dimension, dimension);
+					semantic_error(T->pos, "", "数组维数不匹配");
+				}
+				else {
+					auto ins = symbolTable.symbols[rtn].insVector->vc;
+					int i = symbolTable.symbols[rtn].insVector->dimension - 1;
+					T->ptr[0]->code = NULL; int mul = 1;
+					int startmp, addtmp, finaltmp;
+					int off = T->offset + 4;
+					T->ptr[0]->ptr[1]->offset = off;
+					Exp(T->ptr[0]->ptr[1]);
+					off += T->ptr[0]->ptr[1]->width;
+					T->ptr[0]->code = merge(2, T->ptr[0]->code, T->ptr[0]->ptr[1]->code);
+					int indexPlace = T->ptr[0]->ptr[1]->place;
+					T0 = T->ptr[0]->ptr[0];
+					//cout << T->offset << T->ptr[0]->offset << T0->offset << endl;
+					while (T0->kind == ArrayUse) {
+						T0->ptr[1]->offset = off;
+						Exp(T0->ptr[1]);
+						off += T0->ptr[1]->width;
+						T->ptr[0]->code = merge(2, T->ptr[0]->code, T0->ptr[1]->code);
+						if (T0->ptr[1]->type != INT) {
+							semantic_error(T->pos, "", "数组变量的下标不是整型表达式");
+							break;
+						}
+						startmp = fill_Temp(newTemp(), LEV, T->type, 'T', off);
+						off += 4;
+						result.kind = ID; strcpy(result.id, symbolTable.symbols[startmp].alias);
+						result.type = T->type; result.offset = symbolTable.symbols[startmp].offset;
+						mul *= ins[i--].diff;
+						opn1.kind = INT;  opn1.const_int = mul;
+						
+						opn2.kind = ID; strcpy(opn2.id, symbolTable.symbols[T0->ptr[1]->place].alias);
+						opn2.type = T0->ptr[1]->type; opn2.offset = symbolTable.symbols[T0->ptr[1]->place].offset;
+						T->ptr[0]->code = merge(2, T->ptr[0]->code, genIR(STAR, opn1, opn2, result));
+
+						addtmp = fill_Temp(newTemp(), LEV, T->type, 'T',off);
+						off += 4;
+						strcpy(result.id, symbolTable.symbols[addtmp].alias);
+						result.offset = symbolTable.symbols[addtmp].offset;
+						opn1.kind = ID; strcpy(opn1.id, symbolTable.symbols[startmp].alias);
+						opn1.offset = symbolTable.symbols[startmp].offset;
+						strcpy(opn2.id, symbolTable.symbols[indexPlace].alias);
+						opn2.offset = symbolTable.symbols[indexPlace].offset;
+						T->ptr[0]->code = merge(2, T->ptr[0]->code, genIR(PLUS, opn1, opn2, result));
+						indexPlace = addtmp;
+						//cout << symbolTable.symbols[T0->ptr[1]->place].alias << endl;
+						T0 = T0->ptr[0];
+					}
+					//mark(1);
+					//cout << off << endl;
+					finaltmp = fill_Temp(newTemp(), LEV, T->type, 'T', off);
+					//cout << off << endl;
+					off += 4;
+					result.kind = ID; strcpy(result.id, symbolTable.symbols[finaltmp].alias);
+					result.type = T->type; result.offset = symbolTable.symbols[finaltmp].offset;
+					opn1.kind = INT;  opn1.const_int = 4;
+					opn2.kind = ID; strcpy(opn2.id, symbolTable.symbols[indexPlace].alias);
+					opn2.offset = symbolTable.symbols[indexPlace].offset;
+					//prnIR(genIR(STAR, opn1, opn2, result));
+					T->ptr[0]->code = merge(2, T->ptr[0]->code, genIR(STAR, opn1, opn2, result));
+					T->ptr[0]->inoff = finaltmp;
+					T->offset = off;
+				}
 			}
+				
 			else {
 				Exp(T->ptr[0]);   //处理左值，例中仅为变量
 			}
@@ -682,7 +913,6 @@ void Exp(struct ASTNode *T)
 			if (symbolTable.symbols[T->ptr[0]->place].flag == 'S' && symbolTable.symbols[T->ptr[1]->place].flag == 'S'
 				&& T->ptr[0]->kind == ID && T->ptr[1]->kind == ID) {
 				//结构间赋值
-				mark(0);
 				string stuName = symbolTable.symbols[T->ptr[0]->place].structName;
 				if (stuName != symbolTable.symbols[T->ptr[0]->place].structName) {
 					semantic_error(T->pos, "", "结构类型不符!");
@@ -715,18 +945,23 @@ void Exp(struct ASTNode *T)
 			}
 			strcpy(opn1.id, symbolTable.symbols[T->ptr[1]->place].alias);//右值一定是个变量或临时变量
 			opn1.offset = symbolTable.symbols[T->ptr[1]->place].offset;
-
+			strcpy(result.id, symbolTable.symbols[T->ptr[0]->place].alias);
 			result.kind = ID;
-			if (T->ptr[0]->kind == ArrayUse)
-				strcpy(result.id, indexdata);
+			if (T->ptr[0]->kind == ArrayUse) {
+				result.kind = ArrayUse;
+				int indexPlace = T->ptr[0]->inoff;
+				strcpy(result.id, symbolTable.symbols[rtn].alias);
+				opn2.kind = ID; strcpy(opn2.id, symbolTable.symbols[indexPlace].alias);
+				opn2.type = T->ptr[1]->type; opn2.offset = symbolTable.symbols[indexPlace].offset;
+				result.offset = symbolTable.symbols[rtn].offset;
+			}
 			else if (T->ptr[0]->kind == StructVal) {
 				result.kind = StructVal;
 				result.inoff = T->ptr[0]->inoff;
-				strcpy(result.id, symbolTable.symbols[T->ptr[0]->place].alias);
+				result.offset = symbolTable.symbols[T->ptr[0]->place].offset;
 			}
 			else
-				strcpy(result.id, symbolTable.symbols[T->ptr[0]->place].alias);
-			result.offset = symbolTable.symbols[T->ptr[0]->place].offset;
+				result.offset = symbolTable.symbols[T->ptr[0]->place].offset;
 			T->code = merge(2, T->code, genIR(T->kind, opn1, opn2, result));
 			//check struct
 
@@ -768,40 +1003,58 @@ void Exp(struct ASTNode *T)
 			else {
 				auto ins = symbolTable.symbols[rtn].insVector->vc;
 				int i = symbolTable.symbols[rtn].insVector->dimension - 1;
-				T->code = NULL; int mul = 1;
-				int startmp,addtmp;
+				int mul = 1;
+				int startmp, addtmp, finaltmp;
+				int off = T->offset + 4;
+				T->ptr[1]->offset = off;
 				Exp(T->ptr[1]);
+				off += T->ptr[1]->width;
 				T->code = merge(2, T->code, T->ptr[1]->code);
 				int indexPlace = T->ptr[1]->place;
+				//cout << symbolTable.symbols[indexPlace].alias << endl;
 				T0 = T->ptr[0];
 				while (T0->kind == ArrayUse) {
-					mark(0);
+					//mark(0);
+					T0->ptr[1]->offset = off;
 					Exp(T0->ptr[1]);
+					off += T0->ptr[1]->width;
 					T->code = merge(2,T->code, T0->ptr[1]->code);
 					if (T0->ptr[1]->type != INT) {
 						semantic_error(T->pos, "", "数组变量的下标不是整型表达式");
 						break;
 					}
-					startmp = fill_Temp(newTemp(), LEV, T->type, 'T', T0->offset + T0->ptr[0]->width + T0->ptr[1]->width);
+					startmp = fill_Temp(newTemp(), LEV, T->type, 'T', off);
+					off += 4;
 					result.kind = ID; strcpy(result.id, symbolTable.symbols[startmp].alias);
 					result.type = T->type; result.offset = symbolTable.symbols[startmp].offset;
 					mul *= ins[i--].diff;
 					opn1.kind = INT;  opn1.const_int = mul;
 					opn2.kind = ID; strcpy(opn2.id, symbolTable.symbols[T0->ptr[1]->place].alias);
 					opn2.type = T0->ptr[1]->type; opn2.offset = symbolTable.symbols[T0->ptr[1]->place].offset;
-					merge(2, T->code, genIR(STAR, opn1, opn2, result));
-
-					addtmp = fill_Temp(newTemp(), LEV, T->type, 'T', T0->offset + T0->ptr[0]->width + T0->ptr[1]->width);
+					T->code = merge(2, T->code, genIR(STAR, opn1, opn2, result));
+					
+					addtmp = fill_Temp(newTemp(), LEV, T->type, 'T', off);
+					off += 4;
 					strcpy(result.id, symbolTable.symbols[addtmp].alias);
 					result.offset = symbolTable.symbols[addtmp].offset;
 					opn1.kind = ID; strcpy(opn1.id, symbolTable.symbols[startmp].alias);
+					opn1.offset = symbolTable.symbols[startmp].offset;
 					strcpy(opn2.id, symbolTable.symbols[indexPlace].alias);
-					merge(2, T->code, genIR(PLUS, opn1, opn2, result));
-
+					opn2.offset = symbolTable.symbols[indexPlace].offset;
+					T->code = merge(2, T->code, genIR(PLUS, opn1, opn2, result));
 					indexPlace = addtmp;
 					//cout << symbolTable.symbols[T0->ptr[1]->place].alias << endl;
 					T0 = T0->ptr[0];
 				}
+
+				finaltmp = fill_Temp(newTemp(), LEV, T->type, 'T', off);
+				result.kind = ID; strcpy(result.id, symbolTable.symbols[finaltmp].alias);
+				result.type = T->type; result.offset = symbolTable.symbols[finaltmp].offset;
+				opn1.kind = INT;  opn1.const_int = 4;
+				opn2.kind = ID; strcpy(opn2.id, symbolTable.symbols[indexPlace].alias);
+				opn2.offset = symbolTable.symbols[indexPlace].offset;
+				//prnIR(genIR(STAR, opn1, opn2, result));
+				T->code = merge(2, T->code, genIR(STAR, opn1, opn2, result));
 
 				T->place = rtn;
 				T->place = fill_Temp(newTemp(), LEV, T->type, 'T', T->offset + T->ptr[0]->width + T->ptr[1]->width);
@@ -809,11 +1062,11 @@ void Exp(struct ASTNode *T)
 				result.type = T->type; result.offset = symbolTable.symbols[T->place].offset;
 				opn1.kind = ID; strcpy(opn1.id, symbolTable.symbols[rtn].alias);
 				opn1.type = T->ptr[0]->type; opn1.offset = symbolTable.symbols[rtn].offset;
-				opn2.kind = ID; strcpy(opn2.id, symbolTable.symbols[indexPlace].alias);
-				opn2.type = T->ptr[1]->type; opn2.offset = symbolTable.symbols[indexPlace].offset;
+				opn2.kind = ID; strcpy(opn2.id, symbolTable.symbols[finaltmp].alias);
+				opn2.type = T->ptr[1]->type; opn2.offset = symbolTable.symbols[finaltmp].offset;
 				//cout << T->kind << endl;
 				T->code = merge(2, T->code, genIR(T->kind, opn1, opn2, result));
-
+				
 			}
 			break;
 
@@ -993,7 +1246,6 @@ void Exp(struct ASTNode *T)
 				T->width += T->ptr[1]->width;
 				T->code = merge(2, T->code, T->ptr[1]->code);
 			}
-			//prnIR(T->code);
 			break;
 		case UMINUS:
 			Exp(T->ptr[0]);
@@ -1005,6 +1257,196 @@ void Exp(struct ASTNode *T)
 			break;
 		}
 	}
+}
+
+void objectCode(struct codenode *head)
+{
+	char opnstr1[32], opnstr2[32], resultstr[32];
+	struct codenode* h = head, *p;
+	int i;
+	FILE* fp = fopen("object.s", "w");
+
+	fprintf(fp, ".data\n");
+	fprintf(fp, "_Prompt: .asciiz \"Enter an integer:  \"\n");
+	fprintf(fp, "_ret: .asciiz \"\\n\"\n");
+	fprintf(fp, ".globl main\n");
+	fprintf(fp, "\n.text\n");
+	fprintf(fp, "main0:\n");
+	fprintf(fp, "addi $sp, $sp, -128\n");
+	fprintf(fp, "jal main\n");
+	fprintf(fp, "li $v0,10\n");
+	fprintf(fp, "syscall\n\n");
+
+	fprintf(fp, "read:\n");
+	fprintf(fp, "  li $v0,4\n");
+	fprintf(fp, "  la $a0,_Prompt\n");
+	fprintf(fp, "  syscall\n");
+	fprintf(fp, "  li $v0,5\n");
+	fprintf(fp, "  syscall\n");
+	fprintf(fp, "  jr $ra\n\n");
+
+	fprintf(fp, "write:\n");
+	fprintf(fp, "  li $v0,1\n");
+	fprintf(fp, "  syscall\n");
+	fprintf(fp, "  li $v0,4\n");
+	fprintf(fp, "  la $a0,_ret\n");
+	fprintf(fp, "  syscall\n");
+	fprintf(fp, "  move $v0,$0\n");
+	fprintf(fp, "  jr $ra\n\n");
+
+	
+	do {
+		switch (h->op) {
+		case ASSIGNOP:
+			if (h->opn1.kind == INT)
+				fprintf(fp, "  li $t3, %d\n", h->opn1.const_int);
+			else if (h->opn1.kind == StructVal) {
+				fprintf(fp, "  lw $t3, %d($sp)\n", h->opn1.offset + h->opn1.inoff);
+			}
+			else {
+				fprintf(fp, "  lw $t3, %d($sp)\n", h->opn1.offset);
+			}
+
+			if (h->result.kind == ArrayUse) {
+				//cout << h->result.offset << "   " << h->opn2.offset;
+				fprintf(fp, "  li $t1, %d\n", h->result.offset);
+				fprintf(fp, "  lw $t2, %d($sp)\n", h->opn2.offset);
+				fprintf(fp, "  add $t4, $t1, $t2\n");
+				fprintf(fp, "  add $sp, $sp, $t4\n");
+				fprintf(fp, "  sw $t3, ($sp)\n");
+				fprintf(fp, "  sub $sp, $sp, $t4\n");
+			}
+			else if (h->result.kind == StructVal) {
+				//cout << h->result.offset << "    " << h->result.inoff << endl;
+				fprintf(fp, "  sw $t3, %d($sp)\n", h->result.offset + h->result.inoff);
+			}
+			else
+				fprintf(fp, "  sw $t3, %d($sp)\n", h->result.offset);
+			break;
+		case ArrayUse:
+			//cout << h->result.offset << "   " << h->opn1.offset << "   " << h->opn2.offset;
+			fprintf(fp, "  li $t1, %d\n", h->opn1.offset);
+			fprintf(fp, "  lw $t2, %d($sp)\n", h->opn2.offset);
+			fprintf(fp, "  add $t4, $t1, $t2\n");
+			fprintf(fp, "  add $sp, $sp, $t4\n");
+			fprintf(fp, "  lw $t3, ($sp)\n");
+			fprintf(fp, "  sub $sp, $sp, $t4\n");
+			fprintf(fp, "  sw $t3, %d($sp)\n", h->result.offset);
+			break;
+		case PLUS:
+		case MINUS:
+		case STAR:
+		case DIV:
+			if (h->opn1.kind == StructVal)
+				fprintf(fp, "  lw $t1, %d($sp)\n", h->opn1.offset + h->opn1.inoff);
+			else if (h->opn1.kind == INT)
+				fprintf(fp, "  li $t1, %d\n", h->opn1.const_int);
+			else
+				fprintf(fp, "  lw $t1, %d($sp)\n", h->opn1.offset);
+
+			if (h->opn2.kind == StructVal)
+				fprintf(fp, "  lw $t2, %d($sp)\n", h->opn2.offset + h->opn2.inoff);
+			else if (h->opn2.kind == INT)
+				fprintf(fp, "  li $t2, %d\n", h->opn2.const_int);
+			else
+				fprintf(fp, "  lw $t2, %d($sp)\n", h->opn2.offset);
+
+			if (h->op == PLUS)	fprintf(fp, "  add $t3, $t1, $t2\n");
+			else if (h->op == MINUS)	fprintf(fp, "  sub $t3, $t1, $t2\n");
+			else if (h->op == STAR)	fprintf(fp, "  mul $t3, $t1, $t2\n");
+			else {
+				fprintf(fp, "  mul $t3, $t1, $t2\n");
+				fprintf(fp, "  div $t1, $t2\n");
+				fprintf(fp, "  mflo $t3\n");
+			}
+			fprintf(fp, "  sw $t3, %d($sp)\n", h->result.offset);
+			break;
+		case SelfPlusL:
+		case SelfPlusR:
+		case SelfDecL:
+		case SelfDecR:
+			fprintf(fp, "  lw $t1, %d($sp)\n", h->result.offset);
+			if (h->op == SelfPlusL || h->op == SelfPlusR)
+				fprintf(fp, "  addi $t1, $t1, 1\n");
+			else
+				fprintf(fp, "  addi $t1, $t1, -1\n");
+			fprintf(fp, "  sw $t1, %d($sp)\n", h->result.offset);
+			break;
+		case FUNCTION:
+			fprintf(fp, "\n%s:\n", h->result.id);
+			if (!strcmp(h->result.id, "main"))
+				fprintf(fp, "  addi $sp, $sp, -%d\n", symbolTable.symbols[h->result.offset].offset);
+			break;
+		case PARAM:
+		case ARG:
+			break;
+		case LABEL: fprintf(fp, "%s:\n", h->result.id);
+			break;
+		case GOTO:  fprintf(fp, "  j %s\n", h->result.id);
+			break;
+		case JLE:
+		case JLT:
+		case JGE:
+		case JGT:
+		case EQ:
+		case NEQ:
+			fprintf(fp, "  lw $t1, %d($sp)\n", h->opn1.offset);
+			fprintf(fp, "  lw $t2, %d($sp)\n", h->opn2.offset);
+			if (h->op == JLE)  fprintf(fp, "  ble $t1, $t2,%s\n", h->result.id);
+			else if (h->op == JLT)  fprintf(fp, "  blt $t1, $t2,%s\n", h->result.id);
+			else if (h->op == JGE)  fprintf(fp, "  bge $t1, $t2,%s\n", h->result.id);
+			else if (h->op == JGT)  fprintf(fp, "  bgt $t1, $t2,%s\n", h->result.id);
+			else if (h->op == EQ)   fprintf(fp, "  beq $t1, $t2,%s\n", h->result.id);
+			else	fprintf(fp, "  bne $t1, $t2,%s\n", h->result.id);
+			break;
+		case CALL:
+			if (!strcmp(h->opn1.id, "read")) {
+				fprintf(fp, "  addi $sp, $sp, -4\n");
+				fprintf(fp, "  sw $ra, 0($sp)\n");
+				fprintf(fp, "  jal read\n");
+				fprintf(fp, "  lw $ra, 0($sp)\n");
+				fprintf(fp, "  addi $sp, $sp, 4\n");
+				fprintf(fp, "  sw $v0, %d($sp)\n", h->result.offset);
+				break;
+			}
+			if (!strcmp(h->opn1.id, "write")) {
+				fprintf(fp, "  lw $a0, %d($sp)\n", h->prior->result.offset);
+				fprintf(fp, "  addi $sp, $sp, -4\n");
+				fprintf(fp, "  sw $ra, 0($sp)\n");
+				fprintf(fp, "  jal write\n");
+				fprintf(fp, "  lw $ra, 0($sp)\n");
+				fprintf(fp, "  addi $sp, $sp, 4\n");
+				break;
+			}
+
+			for (p = h, i = 0; i < symbolTable.symbols[h->opn1.offset].paramnum; i++)
+				p = p->prior;
+
+			fprintf(fp, "  move $t0,$sp\n");
+			fprintf(fp, "  addi $sp, $sp, -%d\n", symbolTable.symbols[h->opn1.offset].offset);
+			fprintf(fp, "  sw $ra,0($sp)\n");
+			i = h->opn1.offset + 1;
+			while (symbolTable.symbols[i].flag == 'P')
+			{
+				fprintf(fp, "  lw $t1, %d($t0)\n", p->result.offset);
+				fprintf(fp, "  move $t3,$t1\n");
+				fprintf(fp, "  sw $t3,%d($sp)\n", symbolTable.symbols[i].offset);
+				p = p->next; i++;
+			}
+			fprintf(fp, "  jal %s\n", h->opn1.id);
+			fprintf(fp, "  lw $ra,0($sp)\n");
+			fprintf(fp, "  addi $sp,$sp,%d\n", symbolTable.symbols[h->opn1.offset].offset);
+			fprintf(fp, "  sw $v0,%d($sp)\n", h->result.offset);
+			break;
+
+		case RETURN:
+			fprintf(fp, "  lw $v0, %d($sp)\n", h->result.offset);
+			fprintf(fp, "  jr $ra\n");
+			break;
+		}
+		h = h->next;
+	} while (h != head);
+	fclose(fp);
 }
 
 void semantic_Analysis(struct ASTNode *T)
@@ -1185,6 +1627,13 @@ void semantic_Analysis(struct ASTNode *T)
 			T0->offset = T->offset;
 			T->width = 0;
 			width = T->ptr[1]->type == INT ? 4 : (T->ptr[1]->type == FLOAT ? 8 : 1);  //一个变量宽度
+			if (T->ptr[0]->kind == StructDef) {
+				auto rtn = structTable.find(T->ptr[0]->type_id);
+				width = 0;
+				for (auto v : (*rtn).second) {
+					width += v.width;
+				}
+			}
 			while (T0) {  //处理所有DEC_LIST结点
 				num++;
 				T0->ptr[0]->type = T0->type;  //类型属性向下传递
@@ -1241,13 +1690,15 @@ void semantic_Analysis(struct ASTNode *T)
 			T->code = T->ptr[0]->code;
 			T->width = T->ptr[0]->width;
 			if (T->ptr[1]) {     //2条以上语句连接,S.next属性向下传递
+				//cout << T->ptr[1]->kind << endl;
 				strcpy(T->ptr[1]->Snext, T->Snext);
 				T->ptr[1]->offset = T->offset;  //顺序结构共享单元方式
 				T->ptr[1]->fun_type = T->fun_type;
 //                  T->ptr[1]->offset=T->offset+T->ptr[0]->width; //顺序结构顺序分配单元方式
 				semantic_Analysis(T->ptr[1]);
 				//序列中第1条为表达式语句，返回语句，复合语句时，第2条前不需要标号
-				if (T->ptr[0]->kind == RETURN || T->ptr[0]->kind == EXP_STMT || T->ptr[0]->kind == COMP_STM)
+				if (T->ptr[0]->kind == RETURN || T->ptr[0]->kind == EXP_STMT 
+					|| T->ptr[0]->kind == COMP_STM || T->ptr[0]->kind == BREAK)
 					T->code = merge(2, T->code, T->ptr[1]->code);
 				else
 					T->code = merge(3, T->code, genLabel(T->ptr[0]->Snext), T->ptr[1]->code);
@@ -1304,6 +1755,58 @@ void semantic_Analysis(struct ASTNode *T)
 			breakLabel = NULL;
 			continueLabel = NULL;
 			break;
+		case SWITCH:
+			switchFlag = 1;
+			char End[32], label[32], nextLabel[32];
+			codenode* defaultCode;
+			Exp(T->ptr[0]);
+			T->code = merge(2, T->code, T->ptr[0]->code);
+			opn1.kind = ID; strcpy(opn1.id, symbolTable.symbols[T->ptr[0]->place].alias);
+			opn1.offset = T->ptr[0]->offset;
+			T0 = T->ptr[1];//CaseList / Default
+			while (T0 && T0->kind != DEFAULT) {
+				T0 = T0->ptr[2];
+			}
+			if (!T0) {
+				//没有default
+				strcpy(End, T->Snext);
+				defaultCode = NULL;
+			}
+			else {
+				//有default
+				semantic_Analysis(T0->ptr[0]);
+				strcpy(label, newLabel());
+				//defaultCode= merge(2,  genLabel(label) ,T0->ptr[0]->code);
+				defaultCode = T0->ptr[0]->code;
+				strcpy(End, label);
+			}
+			T0 = T->ptr[1];
+			while (T0 && T0->kind == CaseList) {
+				breakLabel = genGoto(T->Snext);
+				Exp(T0->ptr[0]);
+				semantic_Analysis(T0->ptr[1]);
+				
+				strcpy(label, newLabel());
+				if (T0->ptr[2] != NULL && T0->ptr[2]->kind == CaseList)
+					strcpy(nextLabel, newLabel());
+				else
+					strcpy(nextLabel, End);
+				opn2.kind = ID; strcpy(opn2.id, symbolTable.symbols[T0->ptr[0]->place].alias);
+				opn2.offset = T0->ptr[0]->offset;
+				strcpy(result.id, label);
+				T->code = merge(7, T->code, T0->ptr[0]->code, genIR(EQ, opn1, opn2, result),
+					genGoto(nextLabel), genLabel(label), T0->ptr[1]->code,genLabel(nextLabel));
+				//prnIR(T0->ptr[1]->code);
+				//prnIR(T->code);
+				//cout << endl;
+				T0 = T0->ptr[2];
+			}
+			if (defaultCode != NULL)
+				T->code = merge(2, T->code, defaultCode);
+			switchFlag = 0;
+			breakLabel = NULL;
+			break;
+
 		case FOR:
 			forFlag = 1;
 			++LEV;
@@ -1332,7 +1835,6 @@ void semantic_Analysis(struct ASTNode *T)
 			semantic_Analysis(T->ptr[3]);
 			if (T->width < T->ptr[3]->width) T->width = T->ptr[3]->width;
 
-			//prnIR(T->ptr[1]->code);
 			T->code = merge(9, T->ptr[0]->code, genGoto(T->ptr[0]->Snext),genLabel(T->ptr[3]->Snext),
 				T->ptr[2]->code, genLabel(T->ptr[0]->Snext), T->ptr[1]->code, genLabel(T->ptr[1]->Etrue),
 				T->ptr[3]->code, genGoto(T->ptr[3]->Snext));
@@ -1379,15 +1881,17 @@ void semantic_Analysis(struct ASTNode *T)
 			printf("StructDec\n");
 			break;
 		case BREAK:
-			if(loopFlag == 0)
+			if(loopFlag == 0 && switchFlag == 0)
 				semantic_error(T->pos, " ", "break语句出现位置错误");
 			T->code = breakLabel;
+			//prnIR(breakLabel);
 			break;
 		case CONTINUE:
 			if(loopFlag == 0)
 				semantic_error(T->pos, " ", "continue语句出现位置错误");
 			T->code = continueLabel;
 			break;
+		
 		case ID:
 		case INT:
 		case FLOAT:
@@ -1417,6 +1921,21 @@ void semantic_Analysis(struct ASTNode *T)
 	}
 }
 
+void Optimization()
+{
+	int lastnum, newnum;
+	lastnum = countNumbers();
+	optim();
+	newnum = countNumbers();
+	while (lastnum != newnum)
+	{
+		optim();
+		lastnum = newnum;
+		newnum = countNumbers();
+	}
+	optim();
+}
+
 void semantic_Analysis0(struct ASTNode *T) {
 	symbolTable.index = 0;
 	fillSymbolTable("read", "", 0, INT, 'F', 4);
@@ -1430,5 +1949,15 @@ void semantic_Analysis0(struct ASTNode *T) {
 	semantic_Analysis(T);
 	//printStructTable();
 	prnIR(T->code);
-	//objectCode(T->code);
+	objectCode(T->code);
+
+	getBaseBlocks(T->code);
+	Optimization();
+	Allcount = 0;
+	for (auto v : baseBlocks)
+		prnIR(v);
+	/*optim(T->code);
+	optim(T->code);
+	optim(T->code);*/
+
 }

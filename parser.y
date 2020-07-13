@@ -139,8 +139,8 @@ CaseStmt: StmtBase {$$=$1;}
          | LoopIF {$$=$1;}
          ;
 
-CaseList:CASE ConstExp COLON CaseStmtList CaseList{$$=mknode(3,CaseList,yylineno,$2,$4,$5);strcpy($$->type_id,"CASE");}
-        | DEFAULT COLON CaseStmtList{$$=mknode(1,DEFAULT,yylineno,$3);strcpy($$->type_id,"DEFAULT");}
+CaseList:CASE Exp COLON LoopStmList CaseList{$$=mknode(3,CaseList,yylineno,$2,$4,$5);strcpy($$->type_id,"CASE");}
+        | DEFAULT COLON LoopStmList{$$=mknode(1,DEFAULT,yylineno,$3);strcpy($$->type_id,"DEFAULT");}
         | {$$=NULL}
 
 LoopCompSt: LC DefList LoopStmList RC    {$$=mknode(2,COMP_STM,yylineno,$2,$3);}
